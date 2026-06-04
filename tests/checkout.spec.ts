@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { Page } from '@playwright/test';
 
-test('test @lambdatest', async ({ page }: { page: Page }) => {
+test('test @checkout', async ({ page }: { page: Page }) => {
   await page.goto('https://ecommerce-playground.lambdatest.io/');
   await page.getByRole('textbox', { name: 'Search For Products' }).click();
   await page.getByRole('textbox', { name: 'Search For Products' }).fill('HP');

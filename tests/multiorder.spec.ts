@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('test', async ({ page }) => {
+test('test @multiorder', async ({ page }) => {
   await page.goto('https://rahulshettyacademy.com/seleniumPractise/#/');
   await page.getByRole('heading', { name: 'Brocolli - 1 Kg' }).click();
   await page.getByRole('button', { name: 'ADD TO CART' }).first().click({ timeout: 5000 });
