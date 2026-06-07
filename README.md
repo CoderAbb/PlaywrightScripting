@@ -1,5 +1,7 @@
 📘 PlaywrightScripting
+
 End‑to‑End UI Automation with Playwright & TypeScript
+
 Welcome to PlaywrightScripting, a hands‑on automation project built using Microsoft Playwright with TypeScript.
 This repository demonstrates real‑world UI automation patterns, including selectors, navigation, assertions, and reusable helpers.
 
@@ -7,17 +9,11 @@ Whether you're learning Playwright or building a scalable automation suite, this
 
 🚀 Features
 ✔ Playwright Test Runner with TypeScript
-
 ✔ Cross‑browser automation (Chromium, Firefox, WebKit)
-
 ✔ Modern selectors (getByRole, getByText, locator)
-
 ✔ Reusable helper functions
-
 ✔ Structured test flows (login → shop → cart → checkout)
-
 ✔ Easy to extend for POM or fixtures
-
 ✔ HTML reports & trace viewer support
 
 📂 Project Structure
@@ -30,6 +26,8 @@ PlaywrightScripting/
 ├── playwright.config.ts
 ├── package.json
 └── README.md
+
+
 🛠 Installation
 Make sure you have Node.js 18+ installed.
 
@@ -68,18 +66,13 @@ Open trace viewer:
 bash
 npx playwright show-trace trace.zip
 🧪 Example Test Included
+
 The repository includes a complete end‑to‑end flow:
-
 Login
-
 Browse products
-
 Add items to cart
-
 Remove an item
-
 Proceed to checkout
-
 Fill checkout form
 
 This demonstrates how to build stable, readable automation using Playwright’s modern APIs.
@@ -97,13 +90,9 @@ These improve debugging, formatting, and test authoring.
 
 🧭 Roadmap
 Future enhancements may include:
-
 Page Object Model (POM) structure
-
 Custom fixtures
-
 API + UI hybrid tests
-
 CI/CD integration (GitHub Actions)
 
 Allure reporting
