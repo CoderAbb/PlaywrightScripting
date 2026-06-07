@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('searchflights', async ({ page }) => {
+test('searchflights @flights', async ({ page }) => {
   await page.goto('https://rahulshettyacademy.com/seleniumPractise/#/');
   const page1Promise = page.waitForEvent('popup');
   await page.getByRole('link', { name: 'Flight Booking' }).click();
