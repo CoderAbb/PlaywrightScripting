@@ -1,0 +1,60 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - link [ref=e5] [cursor=pointer]:
+      - /url: ""
+    - text:  
+  - navigation [ref=e9]:
+    - text: 
+    - generic [ref=e11]:
+      - link "Home" [ref=e12] [cursor=pointer]:
+        - /url: https://qaautomationlabs.com/
+      - link "About" [ref=e13] [cursor=pointer]:
+        - /url: https://qaautomationlabs.com/about/
+      - link "Courses" [ref=e14] [cursor=pointer]:
+        - /url: https://qaautomationlabs.com/courses/
+      - link "Events" [ref=e15] [cursor=pointer]:
+        - /url: https://qaautomationlabs.com/events/
+      - link "Shop " [ref=e17] [cursor=pointer]:
+        - /url: "#"
+        - text: Shop
+        - generic [ref=e18]: 
+      - link "Testing" [ref=e19] [cursor=pointer]:
+        - /url: https://testing.qaautomationlabs.com/
+      - link "Blog" [ref=e20] [cursor=pointer]:
+        - /url: https://qaautomationlabs.com/blog/
+      - link "Contact" [ref=e21] [cursor=pointer]:
+        - /url: https://qaautomationlabs.com/contacts/
+  - navigation [ref=e25]:
+    - link "Home" [ref=e26] [cursor=pointer]:
+      - /url: "#"
+    - generic [ref=e27]: / Login
+  - generic [ref=e28]:
+    - heading "Login" [level=2] [ref=e29]
+    - generic [ref=e30]:
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - textbox "Email" [ref=e34]: demo@demo.com
+          - paragraph
+        - generic [ref=e35]:
+          - textbox "Password" [ref=e36]: demo
+          - paragraph
+        - generic [ref=e37]:
+          - paragraph
+          - button "Login" [active] [ref=e38] [cursor=pointer]
+      - generic [ref=e40]:
+        - paragraph [ref=e41]:
+          - strong [ref=e42]: "Email:"
+          - text: demo@demo.com
+        - paragraph [ref=e43]:
+          - strong [ref=e44]: "Password:"
+          - text: demo
+  - paragraph [ref=e48]:
+    - text: © 2025
+    - link "QA Automation Labs" [ref=e49] [cursor=pointer]:
+      - /url: "#"
+    - text: . All Rights Reserved.
+  - text: 
+```
