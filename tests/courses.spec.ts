@@ -4,10 +4,6 @@ async function clickSpan(page: Page, index: number) {
     await page.locator('span').nth(index).click();
 }
 
-async function clickSpans(page: Page, indexes: number[]) {
-    for (const i of indexes) await clickSpan(page, i);
-}
-
 async function openHome(page: Page) {
     await page.goto('https://qaautomationlabs.com/');
 }

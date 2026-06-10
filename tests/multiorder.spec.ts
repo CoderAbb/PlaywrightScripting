@@ -14,7 +14,7 @@ test('multiorder @multipleitems', async ({ page }) => {
         await addToCart(page, item);
     }
 
-    await page.getByRole('link', { name: 'Cart' }).click();
+    await page.getByRole('link', { name: 'Cart' }).click({ timeout: 5000 });
     await page.getByRole('button', { name: 'PROCEED TO CHECKOUT' }).click();
     await page.getByRole('button', { name: 'Place Order' }).click();
     await page.getByRole('combobox').selectOption({ label: 'India' });

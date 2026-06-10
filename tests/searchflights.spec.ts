@@ -13,13 +13,13 @@ test('searchflights @flights', async ({ page }) => {
 
   async function fillifpresent(page: any, text: string, options?: { timeout?: number }) {
   if (await page.getByRole('link', { name: text }).isVisible({ timeout: options?.timeout })) {
-    await page.getByRole('link', { name: text }).click();
+    await page.getByRole('link', { name: text }).click({ timeout: options?.timeout });
   }
   }
 
-  await page1.getByRole('link', { name: '12' }).first().click();
+  await page1.getByRole('link', { name: '12' }).first().click({ timeout: 2000 });
   await page1.getByRole('button').nth(1).click();
-  await page1.getByRole('link', { name: '19' }).first().click();
-  await page1.getByRole('checkbox', { name: 'Indian Armed Forces' }).check();
+  await page1.getByRole('link', { name: '19' }).first().click({ timeout: 2000 });
+  await page1.getByRole('checkbox', { name: 'Indian Armed Forces' }).check({ timeout: 2000 });
   await page1.getByRole('button', { name: 'Search' }).click();
 });
