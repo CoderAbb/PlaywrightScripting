@@ -69,7 +69,7 @@ async function checkout(page: Page) {
   await fillIfPresent(page, 'First Name', 'Test');
   await fillIfPresent(page, 'Last Name', 'User');
   await fillIfPresent(page, 'Email', 'example@example.com');
-  await fillIfPresent(page, 'Address', '123 Test Street');
+  await fillIfPresent(page, 'Address', '123 Straight Street');
   await fillIfPresent(page, 'City', 'Dallas');
   await fillIfPresent(page, 'Zip', '75001');
 
