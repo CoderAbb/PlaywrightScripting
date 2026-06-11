@@ -74,6 +74,9 @@
 			Remove an item
 			Proceed to checkout
 			Fill checkout form
+			Courses and Events
+			Radio and Checbox tests
+			
 			
 			This demonstrates how to build stable, readable automation using Playwright’s modern APIs.
 			
@@ -88,11 +91,6 @@
 			
 			These improve debugging, formatting, and test authoring.
 			
-			🧭 Roadmap
-			Future enhancements may include:
-			Page Object Model (POM) structure
-			Custom fixtures
-			API + UI hybrid tests
-			CI/CD integration (GitHub Actions)
+			
 			
 			Allure reporting
