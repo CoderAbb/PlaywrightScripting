@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test('electronics flow', async ({ page }) => {
+
+test('electronicsFlow @electronics', async ({ page }) => {
     const byRole = (role: Parameters<typeof page.getByRole>[0], opts?: any) =>
         page.getByRole(role as any, opts);
     const textbox = (name: string) => byRole('textbox', { name });

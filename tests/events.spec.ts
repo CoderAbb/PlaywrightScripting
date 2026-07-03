@@ -19,7 +19,7 @@ const goHome = async (page: Page) => {
     await clickLinkByName(page, '/ Home');
 };
 
-test('test', async ({ page }) => {
+test('@events ', async ({ page }) => {
     await page.goto('https://qaautomationlabs.com/');
 
     await openEvent(page, 'Colombo Test Automation');
