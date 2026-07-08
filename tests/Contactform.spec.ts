@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('contact form submission', async ({ page }) => {
+test('contact form submission @contacts', async ({ page }) => {
   await page.goto('https://qaautomationlabs.com/');
   await page.getByRole('link', { name: 'Contacts' }).click();
 
