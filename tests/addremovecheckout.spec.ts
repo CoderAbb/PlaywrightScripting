@@ -1,89 +1,62 @@
 import { test, expect, Page } from '@playwright/test';
 
-
 test.describe('AutomationLabs', () => {
   test('homepageLink @homepage', async ({ page }) => {
     await page.goto('https://qaautomationlabs.com/');
-    await expect(page.getByRole('link', { name: 'QA Automation Labs' })).toBeVisible();
-    await page.getByRole('link', { name: 'QA Automation Labs' }).click();
+    await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
+    await page.getByRole('link', { name: 'Home' }).first().click();
   });
 
   test('loginPage @login', async ({ page }) => {
-    await page.goto('https://qaautomationlabs.com/');
-    // Open the login form via the header icon/span which is present on the site
-    await page.locator('span').nth(3).click();
-    await page.getByRole('link', { name: '/ Shop' }).click();
-    await page.getByRole('textbox', { name: 'Email' }).click();
-    await page.getByRole('textbox', { name: 'Email' }).fill('demo@demo.com');
-    await page.getByRole('textbox', { name: 'Email' }).press('Tab');
-    await page.getByRole('textbox', { name: 'Password' }).fill('demo');
-    await page.getByRole('button', { name: 'Login' }).click();
+    await page.goto('https://shop.qaautomationlabs.com/');
+    await page.getByRole('button', { name: /autofill demo credentials/i }).click();
+    await page.getByRole('button', { name: /login/i }).click();
+    await expect(page).toHaveURL(/shop\.php$/);
   });
 
-test('ShoppingCart @shoppingcart', async ({ page }) => {
+  test('ShoppingCart @shoppingcart', async ({ page }) => {
+    await page.goto('https://shop.qaautomationlabs.com/');
+    await page.getByRole('button', { name: /autofill demo credentials/i }).click();
+    await page.getByRole('button', { name: /login/i }).click();
+    await expect(page).toHaveURL(/shop\.php$/);
 
-  // Navigate to site
-  await page.goto('https://qaautomationlabs.com/');
+    await page.goto('https://shop.qaautomationlabs.com/mens-wear.php');
+    await page.locator('button').filter({ hasText: /add to cart/i }).first().click();
 
-  // Login
-  await page.locator('span').nth(3).click();
-  await page.getByRole('link', { name: '/ Shop' }).click();
-  await page.getByRole('textbox', { name: 'Email' }).fill('demo@demo.com');
-  await page.getByRole('textbox', { name: 'Password' }).fill('demo');
-  await page.getByRole('button', { name: 'Login' }).click();
+    await page.goto('https://shop.qaautomationlabs.com/womens-wear.php');
+    await page.locator('button').filter({ hasText: /add to cart/i }).first().click();
 
-  // Navigate to Men Fashion
-  await page.getByText('Save 20% Men Fashion Shop Now').click();
-  await page.getByRole('link', { name: 'Shop Now' }).first().click();
+    await page.goto('https://shop.qaautomationlabs.com/kids-wear.php');
+    await page.locator('button').filter({ hasText: /add to cart/i }).first().click();
 
-  // Add products
-  await page.getByRole('img', { name: 'Black T-Shirt' }).click();
-  await page.getByRole('button', { name: ' Add to Cart' }).first().click();
+    await page.locator('a[aria-label="Cart"], a[title="Cart"]').first().click();
+    await expect(page.locator('body')).toContainText('Remove');
 
-  await page.getByRole('img', { name: 'White T-Shirt' }).click();
-  await page.getByRole('button', { name: ' Add to Cart' }).nth(1).click();
-
-  await page.getByRole('img', { name: 'Green Shirt' }).click();
-  await page.getByRole('button', { name: ' Add to Cart' }).nth(2).click();
-
-  // Open cart
-  await page.getByRole('link', { name: '' }).click();
-  await expect(page.getByRole('columnheader', { name: 'Remove' })).toBeVisible();
-
-  // Remove one item
-  // The following selector assumes that the 'Remove' button is inside the row containing 'Black T-Shirt'.
-  // If the table structure changes, update this selector accordingly for robustness.
-
-await page.getByRole('row', { name: 'Black T-Shirt $150 1 $150 ' })
-    .getByRole('button')
-    .click();
-
-  // Proceed to checkout
-  await page.getByRole('link', { name: 'Proceed To Checkout' }).click();
-
-  // Fill checkout form
-  await checkout(page);
+    await page.getByRole('button', { name: /remove/i }).first().click();
+    await page.getByRole('link', { name: /proceed to checkout/i }).click();
+    await checkout(page);
+  });
 });
 
 async function checkout(page: Page) {
   await fillIfPresent(page, 'First Name', 'Test');
   await fillIfPresent(page, 'Last Name', 'User');
-  await fillIfPresent(page, 'Email', 'example@example.com');
+  await fillIfPresent(page, 'E-mail', 'example@example.com');
+  await fillIfPresent(page, 'Mobile No.', '1234567890');
   await fillIfPresent(page, 'Address', '123 Straight Street');
+  await fillIfPresent(page, 'State', 'Texas');
   await fillIfPresent(page, 'City', 'Dallas');
-  await fillIfPresent(page, 'Zip', '75001');
+  await fillIfPresent(page, 'Pin Code', '75001');
 
-  // Some pages show a "Continue" button instead of "Place Order" — accept either.
-  if (await page.getByRole('button', { name: 'Place Order' }).count()) {
-    await page.getByRole('button', { name: 'Place Order' }).first().click();
+  const continueButton = page.getByRole('button', { name: /continue/i });
+  if (await continueButton.count()) {
+    await continueButton.first().click();
   } else {
-    // Fallback to a CSS text-based selector
     await page.locator('button:has-text("Continue"), button:has-text("Place Order")').first().click();
   }
 }
 
 async function fillIfPresent(page: Page, placeholderOrLabel: string, value: string) {
-  // Try placeholder first, then label, then role-based textbox lookup for robustness.
   let locator = page.getByPlaceholder(placeholderOrLabel);
   if (await locator.count() === 0) {
     locator = page.getByLabel(placeholderOrLabel);
@@ -97,4 +70,3 @@ async function fillIfPresent(page: Page, placeholderOrLabel: string, value: stri
   }
 }
 
-});
