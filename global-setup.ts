@@ -1,11 +1,11 @@
-import { chromium, FullConfig } from '@playwright/test';
-import { mkdir, writeFile } from 'fs/promises';
-import path from 'path';
+const { chromium } = require('@playwright/test');
+const { mkdir, writeFile } = require('fs/promises');
+const path = require('path');
 
 const authDir = path.join(process.cwd(), '.auth');
 const authFile = path.join(authDir, 'shop-auth.json');
 
-async function globalSetup(_config: FullConfig) {
+async function globalSetup(_config) {
   await mkdir(authDir, { recursive: true });
 
   const browser = await chromium.launch();
@@ -24,4 +24,4 @@ async function globalSetup(_config: FullConfig) {
   }
 }
 
-export default globalSetup;
+module.exports = globalSetup;
