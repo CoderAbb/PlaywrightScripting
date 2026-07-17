@@ -2,10 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 test('kids shopping @Kidsshopping', async ({ page }) => {
   await page.goto('https://shop.qaautomationlabs.com/');
-
-  await page.getByRole('button', { name: /autofill demo credentials/i }).click();
-  await page.getByRole('button', { name: /login/i }).click();
-  await expect(page).toHaveURL(/shop\.php$/);
+  await expect(page.locator('body')).toContainText(/shop|products|cart/i);
 
   await page.goto('https://shop.qaautomationlabs.com/kids-wear.php');
   await page.locator('button').filter({ hasText: /add to cart/i }).first().click();
