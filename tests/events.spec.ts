@@ -1,4 +1,6 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { QA_BASE_URL } from '../global-setup.js';
 
 const clickLinkByName = async (page: Page, name: string) => {
     const normalizedName = name.replace(/^\/\s*/, '').trim();
@@ -19,7 +21,7 @@ const goHome = async (page: Page) => {
 };
 
 test('@events ', async ({ page }) => {
-    await page.goto('https://qaautomationlabs.com/');
+    await page.goto(QA_BASE_URL);
 
     await openEventPage(page, 'Colombo Test Automation Conference (CTAC) 2024');
     await goHome(page);

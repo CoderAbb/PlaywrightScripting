@@ -1,0 +1,52 @@
+import { test, expect } from '@playwright/test';
+import { PRACTICE_SITE_URL, TEST_EMAIL, CHECKOUT_GUEST_FIRST_NAME, CHECKOUT_GUEST_LAST_NAME } from '../global-setup.js';
+
+test('test', async ({ page }) => {
+  const click = async (selector: string) => await page.locator(selector).click();
+  const fill = async (selector: string, value: string) => await page.locator(selector).fill(value);
+  const fillAndTab = async (selector: string, value: string) => {
+    await fill(selector, value);
+    await page.locator(selector).press('Tab');
+  };
+
+  await page.goto(PRACTICE_SITE_URL);
+  await click('[data-test="product-01KYQTVAGKZMV8C6ASYXXR9DBF"]');
+  await click('[data-test="add-to-cart"]');
+  await click('[data-test="nav-home"]');
+  await click('[data-test="product-01KYQTVAGR9Y5TQT9J46TY7DR2"]');
+  await click('[data-test="add-to-cart"]');
+  await click('[data-test="nav-cart"]');
+  await click('[data-test="proceed-1"]');
+  await page.getByRole('tab', { name: 'Continue as Guest' }).click();
+  await fillAndTab('[data-test="guest-email"]', TEST_EMAIL);
+  await fillAndTab('[data-test="guest-first-name"]', CHECKOUT_GUEST_FIRST_NAME);
+  await fill('[data-test="guest-last-name"]', CHECKOUT_GUEST_LAST_NAME);
+  await click('[data-test="guest-submit"]');
+  await click('[data-test="proceed-2-guest"]');
+  await page.locator('[data-test="country"]').selectOption('US');
+  await page.locator('[data-test="postal_code"]').click();
+  await page.locator('[data-test="postal_code"]').fill('90987');
+  await page.locator('[data-test="house_number"]').click();
+  await page.locator('[data-test="house_number"]').fill('90');
+  await page.locator('div').filter({ hasText: /^State$/ }).click();
+  await page.locator('[data-test="state"]').press('ArrowDown');
+  await page.locator('[data-test="state"]').press('ArrowDown');
+  await page.locator('[data-test="state"]').press('ArrowDown');
+  await page.locator('[data-test="state"]').press('ArrowDown');
+  await page.locator('[data-test="state"]').press('ArrowDown');
+  await page.locator('[data-test="state"]').press('ArrowDown');
+  await page.locator('[data-test="state"]').press('ArrowDown');
+  await page.locator('[data-test="state"]').press('ArrowDown');
+  await page.locator('[data-test="state"]').press('ArrowDown');
+  await page.locator('[data-test="state"]').press('ArrowDown');
+  await page.locator('[data-test="state"]').press('ArrowDown');
+  await page.locator('[data-test="state"]').press('ArrowDown');
+  await page.locator('[data-test="state"]').press('ArrowRight');
+  await page.locator('div').filter({ hasText: 'Billing AddressCountryYour' }).nth(3).click();
+  await page.locator('[data-test="proceed-3"]').click();
+  await page.locator('[data-test="payment-method"]').selectOption('cash-on-delivery');
+  await page.locator('[data-test="finish"]').click();
+  await expect(page.locator('[data-test="payment-success-message"]')).toContainText('Payment was successful');
+  await page.locator('[data-test="finish"]').click();
+  await page.locator('[data-test="nav-home"]').click();
+});

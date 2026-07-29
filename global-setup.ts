@@ -1,27 +1,59 @@
-const { chromium } = require('@playwright/test');
-const { mkdir, writeFile } = require('fs/promises');
-const path = require('path');
+import { chromium } from '@playwright/test';
+import { mkdir, writeFile } from 'fs/promises';
+import path from 'path';
+
+export const QA_BASE_URL = 'https://qaautomationlabs.com';
+export const SHOP_BASE_URL = 'https://shop.qaautomationlabs.com';
+export const PRACTICE_SITE_URL = 'https://practicesoftwaretesting.com';
+export const LAMBDA_ECOM_URL = 'https://ecommerce-playground.lambdatest.io';
+export const RAHUL_SHETTY_URL = 'https://rahulshettyacademy.com/seleniumPractise/#/';
+export const PLAYWRIGHT_URL = 'https://playwright.dev/';
+export const TODO_URL = 'https://todomvc.com/examples/react/dist/';
+
+export const TEST_EMAIL = 'test@gmail.com';
+export const CHECKOUT_FIRST_NAME = 'Test';
+export const CHECKOUT_LAST_NAME = 'User';
+export const CHECKOUT_PHONE = '1234567890';
+export const CHECKOUT_ADDRESS = '123 Straight Street';
+export const CHECKOUT_CITY = 'Dallas';
+export const CHECKOUT_STATE = 'Texas';
+export const CHECKOUT_POST_CODE = '75001';
+export const CHECKOUT_GUEST_FIRST_NAME = 'testfirst';
+export const CHECKOUT_GUEST_LAST_NAME = 'testlast';
+export const CHECKOUT_ELECTRONICS_PHONE = '9098726735';
+export const CHECKOUT_ELECTRONICS_ADDRESS = '1234 test street';
+export const CHECKOUT_ELECTRONICS_STATE = 'Michigan';
+export const CHECKOUT_ELECTRONICS_CITY = 'Troy';
+export const CHECKOUT_ELECTRONICS_POST_CODE = '78234';
+export const CHECKOUT_KIDS_FIRST_NAME = 'Testname';
+export const CHECKOUT_KIDS_LAST_NAME = 'Testlastname';
+export const CHECKOUT_KIDS_PHONE = '9726635421';
+export const CHECKOUT_KIDS_ADDRESS = '2890 Spring Drive';
+export const CHECKOUT_KIDS_CITY = 'Troy';
+export const CHECKOUT_KIDS_STATE = 'MI';
+export const CHECKOUT_KIDS_POST_CODE = '89283';
 
 const authDir = path.join(process.cwd(), '.auth');
-const authFile = path.join(authDir, 'shop-auth.json');
+export const AUTH_DIR = authDir;
+export const AUTH_FILE = path.join(authDir, 'shop-auth.json');
 
-async function globalSetup(_config) {
+async function globalSetup(_config: any) {
   await mkdir(authDir, { recursive: true });
 
   const browser = await chromium.launch();
   const page = await browser.newPage();
 
   try {
-    await page.goto('https://shop.qaautomationlabs.com/', { waitUntil: 'domcontentloaded' });
+    await page.goto(SHOP_BASE_URL, { waitUntil: 'domcontentloaded' });
     await page.getByRole('button', { name: /autofill demo credentials/i }).click();
     await page.getByRole('button', { name: /login/i }).click();
     await page.waitForURL(/shop\.php$/);
 
     const storageState = await page.context().storageState();
-    await writeFile(authFile, JSON.stringify(storageState, null, 2));
+    await writeFile(AUTH_FILE, JSON.stringify(storageState, null, 2));
   } finally {
     await browser.close();
   }
 }
 
-module.exports = globalSetup;
+export default globalSetup;

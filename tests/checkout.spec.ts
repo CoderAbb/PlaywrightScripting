@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { LAMBDA_ECOM_URL, TEST_EMAIL, CHECKOUT_FIRST_NAME, CHECKOUT_LAST_NAME, CHECKOUT_ADDRESS, CHECKOUT_CITY, CHECKOUT_POST_CODE, CHECKOUT_PHONE } from '../global-setup.js';
 
 type GuestInfo = {
   firstName: string;
@@ -13,19 +14,19 @@ type GuestInfo = {
 };
 
 const GUEST: GuestInfo = {
-  firstName: 'Rakesh',
-  lastName: 'Kumar',
-  email: 'test@gmail.com',
-  telephone: '9728938935',
-  address1: '2030 Mac Drive',
-  city: 'Cleveland',
-  postCode: '44026',
+  firstName: CHECKOUT_FIRST_NAME,
+  lastName: CHECKOUT_LAST_NAME,
+  email: TEST_EMAIL,
+  telephone: CHECKOUT_PHONE,
+  address1: CHECKOUT_ADDRESS,
+  city: CHECKOUT_CITY,
+  postCode: CHECKOUT_POST_CODE,
   countryValue: '223', // value attr for country select
   zoneValue: '3659',   // value attr for zone select
 };
 
 test('checkout @check', async ({ page }) => {
-  await page.goto('https://ecommerce-playground.lambdatest.io/');
+  await page.goto(LAMBDA_ECOM_URL);
 
   const searchBox = page.getByRole('textbox', { name: 'Search For Products' });
   await searchBox.fill('HP');
@@ -40,7 +41,7 @@ test('checkout @check', async ({ page }) => {
   const fields: Array<[string, string]> = [
     ['First Name*', GUEST.firstName],
     ['Last Name*', GUEST.lastName],
-    ['E-Mail*', GUEST.email],
+    ['E-Mail*', TEST_EMAIL],
     ['Telephone*', GUEST.telephone],
     ['Address 1*', GUEST.address1],
     ['City*', GUEST.city],

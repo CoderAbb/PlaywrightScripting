@@ -1,8 +1,10 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { QA_BASE_URL } from '../global-setup.js';
 
 test.describe('@Checkbox and @Radio Button tests', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('https://testing.qaautomationlabs.com/');
+        await page.goto(QA_BASE_URL);
     });
 
     test('@Checkbox test', async ({ page }) => {

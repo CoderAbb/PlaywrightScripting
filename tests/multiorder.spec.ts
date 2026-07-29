@@ -1,4 +1,6 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { RAHUL_SHETTY_URL } from '../global-setup.js';
 
 async function addToCart(page: Page, productName: string) {
     const product = page.locator('.product').filter({ hasText: productName }).first();
@@ -7,7 +9,7 @@ async function addToCart(page: Page, productName: string) {
 }
 
 test('multiorder @multipleitems', async ({ page }) => {
-    await page.goto('https://rahulshettyacademy.com/seleniumPractise/#/');
+    await page.goto(RAHUL_SHETTY_URL);
 
     const items = ['Brocolli', 'Cauliflower', 'Cucumber', 'Beetroot', 'Beans', 'Tomato'];
     for (const item of items) {
@@ -21,6 +23,6 @@ test('multiorder @multipleitems', async ({ page }) => {
     await page.getByRole('checkbox').check();
     await page.getByRole('button', { name: 'Proceed' }).click();
 
-    await page.goto('https://rahulshettyacademy.com/seleniumPractise/#/');
+    await page.goto(RAHUL_SHETTY_URL);
     await expect(page.getByRole('banner')).toContainText('GREENKART');
 });

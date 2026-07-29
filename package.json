@@ -2,6 +2,7 @@
   "name": "playwrightdemo",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "playwright test",
@@ -14,7 +15,8 @@
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@types/node": "^24.10.1",
+    "allure-commandline": "^2.31.0",
     "allure-playwright": "^3.9.0",
-    "allure-commandline": "^2.31.0"
+    "typescript": "^7.0.2"
   }
 }

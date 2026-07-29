@@ -1,7 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
+import { QA_BASE_URL } from '../global-setup.js';
 
 async function openHome(page: Page) {
-    await page.goto('https://qaautomationlabs.com/');
+    await page.goto(QA_BASE_URL);
 }
 
 async function openCourses(page: Page) {

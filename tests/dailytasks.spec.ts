@@ -1,6 +1,7 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { TODO_URL } from '../global-setup.js';
 
-const TODO_URL = 'https://todomvc.com/examples/react/dist/';
 const inputLocator = (page: Page) => page.getByTestId('text-input');
 const todoItemToggle = (page: Page, text: string) =>
   page.getByRole('listitem').filter({ hasText: text }).getByTestId('todo-item-toggle');

@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { RAHUL_SHETTY_URL } from '../global-setup.js';
 
 test('searchflights @flights', async ({ page }) => {
-  await page.goto('https://rahulshettyacademy.com/seleniumPractise/#/');
+  await page.goto(RAHUL_SHETTY_URL);
   const page1Promise = page.waitForEvent('popup');
   await page.getByRole('link', { name: 'Flight Booking' }).click();
   const page1 = await page1Promise;

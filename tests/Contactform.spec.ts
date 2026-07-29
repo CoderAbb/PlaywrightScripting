@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { QA_BASE_URL, TEST_EMAIL } from '../global-setup.js';
 
 test('contact form submission @contacts', async ({ page }) => {
-  await page.goto('https://qaautomationlabs.com/contacts/');
+  await page.goto(`${QA_BASE_URL}/contacts/`);
 
   const nameField = page.getByRole('textbox', { name: 'Name' });
   const emailField = page.getByRole('textbox', { name: 'Email' });
@@ -10,7 +11,7 @@ test('contact form submission @contacts', async ({ page }) => {
   const resultArea = page.locator('#post-202');
 
   await nameField.fill('TestName');
-  await emailField.fill('test@gmail.com');
+  await emailField.fill(TEST_EMAIL);
   await messageField.fill('Test message');
   await sendButton.click();
 
