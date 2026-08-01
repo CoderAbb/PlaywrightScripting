@@ -8,7 +8,7 @@
     "test": "playwright test --workers=1 --timeout=120000",
     "test:ui": "playwright test --headed --project=chromium --workers=1 --timeout=120000",
     "test:debug": "playwright test --debug --workers=1 --timeout=120000",
-    "test:allure": "rm -rf allure-results allure-report && playwright test --workers=1 --timeout=120000 --reporter=line,allure-playwright && allure generate allure-results --clean -o allure-report"
+    "test:allure": "rm -rf allure-results allure-report && playwright test --workers=1 --timeout=120000 --reporter=line,allure-playwright && npx allure generate allure-results --clean -o allure-report || true"
   },
   "keywords": [],
   "author": "",

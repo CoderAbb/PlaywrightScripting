@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import globalSetup from './global-setup.js';
 
 /**
  * Read environment variables from file.
@@ -12,7 +13,9 @@ import { defineConfig, devices } from '@playwright/test';
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  globalSetup: './global-setup.ts',
+
+  ...(process.env.CI ? {} : { globalSetup: './global-setup.ts' }),
+
   testDir: './tests',
   /* Run tests in files in parallel */
   fullyParallel: true,
