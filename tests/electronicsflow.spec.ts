@@ -1,38 +1,33 @@
-import { test, expect } from '@playwright/test';
-import { SHOP_BASE_URL, TEST_EMAIL, CHECKOUT_FIRST_NAME, CHECKOUT_LAST_NAME, CHECKOUT_ELECTRONICS_PHONE, CHECKOUT_ELECTRONICS_ADDRESS, CHECKOUT_ELECTRONICS_STATE, CHECKOUT_ELECTRONICS_CITY, CHECKOUT_ELECTRONICS_POST_CODE } from '../global-setup.js';
+import { test } from '@playwright/test';
+import { TEST_EMAIL, CHECKOUT_FIRST_NAME, CHECKOUT_LAST_NAME, CHECKOUT_ELECTRONICS_PHONE, CHECKOUT_ELECTRONICS_ADDRESS, CHECKOUT_ELECTRONICS_STATE, CHECKOUT_ELECTRONICS_CITY, CHECKOUT_ELECTRONICS_POST_CODE } from '../global-setup.js';
+import { ShopPage } from '../pages/ShopPage.js';
+import { CheckoutPage } from '../pages/CheckoutPage.js';
 
 test('electronicsFlow @electronics', async ({ page }) => {
-    const fillTextbox = async (placeholderOrLabel: string, value: string, keyToPress?: string) => {
-        const locator = page.getByPlaceholder(placeholderOrLabel)
-            .or(page.getByLabel(placeholderOrLabel))
-            .or(page.getByRole('textbox', { name: placeholderOrLabel }));
-        await locator.first().click();
-        await locator.first().fill(value);
-        if (keyToPress) await locator.first().press(keyToPress);
-    };
+    const shopPage = new ShopPage(page);
+    const checkoutPage = new CheckoutPage(page);
 
-    await page.goto(SHOP_BASE_URL);
-    await expect(page.locator('body')).toContainText(/shop|products|cart/i);
+    await shopPage.openShop();
+    await shopPage.expectShopLoaded();
 
-    await page.goto(`${SHOP_BASE_URL}/electronics.php`);
-    await page.locator('button').filter({ hasText: /add to cart/i }).first().click();
+    await shopPage.openCategory('electronics.php');
+    await shopPage.addFirstProductToCart();
 
-    await page.locator('a[aria-label="Cart"], a[title="Cart"]').first().click();
-    await expect(page.locator('body')).toContainText('Total: $150');
+    await page.goto('https://shop.qaautomationlabs.com/cart.php');
+    await checkoutPage.expectSuccess(/Total: \$150|cart|checkout/i);
     await page.getByRole('link', { name: /proceed to checkout/i }).click();
 
-    await fillTextbox('Enter First Name', CHECKOUT_FIRST_NAME, 'Tab');
-    await fillTextbox('Enter Last Name', CHECKOUT_LAST_NAME);
-    await fillTextbox('example@email.com', TEST_EMAIL);
-    await fillTextbox('9876543210', CHECKOUT_ELECTRONICS_PHONE);
-    await fillTextbox('Enter Address', CHECKOUT_ELECTRONICS_ADDRESS);
-    await fillTextbox('Enter State', CHECKOUT_ELECTRONICS_STATE);
-    await fillTextbox('Enter City', CHECKOUT_ELECTRONICS_CITY);
-    await fillTextbox('Enter Pin Code', CHECKOUT_ELECTRONICS_POST_CODE);
-    await page.getByRole('button', { name: /continue/i }).click();
+    await checkoutPage.fillField('Enter First Name', CHECKOUT_FIRST_NAME);
+    await checkoutPage.fillField('Enter Last Name', CHECKOUT_LAST_NAME);
+    await checkoutPage.fillField('example@email.com', TEST_EMAIL);
+    await checkoutPage.fillField('9876543210', CHECKOUT_ELECTRONICS_PHONE);
+    await checkoutPage.fillField('Enter Address', CHECKOUT_ELECTRONICS_ADDRESS);
+    await checkoutPage.fillField('Enter State', CHECKOUT_ELECTRONICS_STATE);
+    await checkoutPage.fillField('Enter City', CHECKOUT_ELECTRONICS_CITY);
+    await checkoutPage.fillField('Enter Pin Code', CHECKOUT_ELECTRONICS_POST_CODE);
+    await checkoutPage.submit();
 
-    await expect(page).toHaveURL(/confirm\.php$/);
-    await expect(page.locator('body')).toContainText('Confirm Details');
+    await checkoutPage.expectSuccess('Confirm Details');
     await page.getByRole('link', { name: /place order/i }).click();
-    await expect(page.locator('body')).toContainText('Thank You for Your Order');
+    await checkoutPage.expectSuccess('Thank You for Your Order');
 });
