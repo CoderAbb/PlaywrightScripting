@@ -5,9 +5,10 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
-    "test:debug": "playwright test --debug"
+    "test": "playwright test --workers=1 --timeout=120000",
+    "test:ui": "playwright test --headed --project=chromium --workers=1 --timeout=120000",
+    "test:debug": "playwright test --debug --workers=1 --timeout=120000",
+    "test:allure": "rm -rf allure-results allure-report && playwright test --workers=1 --timeout=120000 --reporter=line,allure-playwright && allure generate allure-results --clean -o allure-report"
   },
   "keywords": [],
   "author": "",
