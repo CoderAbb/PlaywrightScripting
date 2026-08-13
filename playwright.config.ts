@@ -33,20 +33,25 @@ export default defineConfig({
     /* Base URL to use in actions like `await page.goto('')`. */
     // baseURL: 'http://localhost:3000',
     storageState: './.auth/shop-auth.json',
-    navigationTimeout: 90_000,
-    actionTimeout: 30_000,
+    navigationTimeout: 30_000,
+    actionTimeout: 10_000,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
-    trace: 'on-first-retry'
+    video: 'off',
+    trace: 'off'
   },
 
   /* Configure projects for major browsers */
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        },
+      },
     },
 
     {

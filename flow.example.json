@@ -1,0 +1,6 @@
+[
+  { "action": "click", "text": "Pliers", "role": "link" },
+  { "action": "click", "testId": "add-to-cart" },
+  { "action": "click", "testId": "nav-cart" },
+  { "action": "assertText", "text": "Checkout" }
+]
