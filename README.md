@@ -18,6 +18,10 @@ This repository is architected to showcase production-ready automation patterns,
 
 - **Modular Architecture**: Clean project directory structure designed for seamless scalability (ready for Page Object Model expansion or custom fixtures).
 
+- **Self-Healing CI**: An automated agent (`scripts/auto-heal.mjs`) scans the codebase for TypeScript errors, uses Claude to generate fixes, verifies they compile, and opens a pull request for review — running daily via GitHub Actions and on-demand via Jenkins.
+
+- **AI-Assisted Login Automation**: A CLI agent (`login-agent.ts` / `login-agent.mjs`) that heuristically discovers login form fields on any site, performs the login, and generates a ready-to-use Playwright spec file from the recorded actions.
+
 ## 💡 Benefits
 
 - **Reduced Maintenance Overhead**: User-centric locators decouple tests from implementation details (like brittle CSS/XPath selectors).
@@ -28,18 +32,48 @@ This repository is architected to showcase production-ready automation patterns,
 
 - **Actionable Debugging**: Rich failure traces and HTML reports allow quick root-cause analysis without digging through raw logs.
 
+- **Proactive Code Health**: Compile errors are caught and reported (or auto-fixed) before they block a release, instead of being discovered mid-test-run.
+
 ## 📂 Project Architecture
 
 ```
 PlaywrightScripting/
 │
-├── tests/
-│   └── shoppingCheckout.spec.ts  # End-to-end shopping & checkout workflow
+├── .github/
+│   └── workflows/
+│       └── auto-heal.yml         # Daily GitHub Actions job: detect + fix + open PR
 │
+├── pages/                        # Page Object Model classes
+│   ├── LoginPage.ts
+│   ├── ShopPage.ts
+│   ├── CartPage.ts
+│   ├── CheckoutPage.ts
+│   ├── ToolshopProductPage.ts
+│   ├── ToolshopCartPage.ts
+│   └── ToolshopCheckoutPage.ts
+│
+├── tests/                        # Spec files (Playwright test runner)
+│   ├── shoppingCheckout.spec.ts
+│   ├── checkout.spec.ts
+│   ├── toolshopCartCheckout.spec.ts
+│   └── ...
+│
+├── scripts/
+│   └── auto-heal.mjs             # Self-healing agent: tsc scan -> Claude fix -> verify -> PR
+│
+├── jenkins-agent/                # Standalone Jenkins job scheduler/reporter
+├── jenkins-config.xml            # Freestyle job: install -> heal:detect (non-blocking) -> test
+├── Jenkinsfile.autoheal          # Optional Jenkins pipeline mirror of the GitHub Actions job
+│
+├── login-agent.ts / .mjs         # CLI: auto-discovers login forms, generates a spec file
+├── fixtures.ts                   # Custom Playwright fixtures (e.g. authenticatedPage)
+├── global-setup.ts               # Shared base URLs, test data, and pre-auth storage state
 ├── playwright.config.ts          # Global Playwright configuration
 ├── package.json                  # Dependencies and project scripts
 └── README.md                     # Project documentation
 ```
+
+> `allure-results/` and `allure-report/` are generated locally by `npm run test:allure` and are gitignored — they are not committed to the repo.
 
 ## 🛠️ Getting Started
 
@@ -111,6 +145,44 @@ npx playwright test --trace on
 npx playwright show-trace trace.zip
 ```
 
+**Generate an Allure report:**
+
+```bash
+npm run test:allure
+npx allure open allure-report
+```
+
+## 🤖 Login Agent (AI-Assisted Test Generation)
+
+`login-agent.ts` is a CLI tool that points at any URL, heuristically discovers the email/password/submit fields on the page, performs a live login, and writes out a ready-to-run Playwright spec (`generated.spec.ts` by default) from what it did. Optional follow-up steps (clicks, fills, assertions) can be supplied via a JSON flow file — see `flow.example.json`.
+
+```bash
+npm run login-agent -- --url https://example.com/login --username user@example.com --password secret
+# or, targeting Edge:
+npm run login-agent:edge
+```
+
+## 🩺 Auto-Heal: Self-Healing CI
+
+`scripts/auto-heal.mjs` keeps the codebase compiling without waiting for a human to notice a broken build. It:
+
+1. Runs `tsc --noEmit` to find TypeScript errors.
+2. Sends each broken file + its exact compiler errors to Claude, asking for the smallest possible fix.
+3. Writes the fix and re-runs `tsc` to verify it actually compiles — retries once more if not.
+4. In CI, commits healed files to a new branch, pushes, and opens a pull request summarizing what was fixed and what still needs a human. **It never merges or touches `main` directly.**
+
+| Command | What it does | Needs `ANTHROPIC_API_KEY`? |
+| --- | --- | --- |
+| `npm run heal:detect` | Reports broken files only, no fixes attempted | No |
+| `npm run heal:dry-run` | Shows what a fix would look like, doesn't write it | Yes |
+| `npm run heal` | Applies fixes locally, doesn't commit | Yes |
+| `npm run heal:pr` | Applies fixes, commits, pushes, opens a PR | Yes (+ `GITHUB_TOKEN`, `GITHUB_REPO`) |
+
+**Where it runs:**
+
+- **GitHub Actions** (`.github/workflows/auto-heal.yml`) — runs daily at 07:00 UTC and on-demand via the Actions tab ("Run workflow"). Results stream live to the run's Summary tab (files found, files healed, PR link) as well as the raw logs. Requires an `ANTHROPIC_API_KEY` repository secret; `GITHUB_TOKEN` is provided automatically.
+- **Jenkins** — the main freestyle job (`jenkins-config.xml`) runs `npm run heal:detect` as a free, non-blocking pre-check on every build (just logs findings, never fails the build). `Jenkinsfile.autoheal` is an optional separate pipeline that mirrors the full fix-and-PR behavior for teams that want it in Jenkins instead of, or in addition to, GitHub Actions.
+
 ## 🤝 Contributing
 
 We love community contributions and appreciate your help in making this framework even better! Whether it's adding new test suites, optimizing helper utilities, or improving documentation, all contributions are welcome.
@@ -146,6 +218,8 @@ We love community contributions and appreciate your help in making this framewor
 - Write clean, readable TypeScript code adhering to the project's formatting standards.
 
 - Add or update tests for any new functionality introduced.
+
+Happy Testing! 🎭
 
 ---
 
