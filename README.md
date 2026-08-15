@@ -220,7 +220,3 @@ We love community contributions and appreciate your help in making this framewor
 - Add or update tests for any new functionality introduced.
 
 Happy Testing! 🎭
-
----
-
-**Happy Testing! 🎭**
