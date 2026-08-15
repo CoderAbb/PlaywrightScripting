@@ -1,0 +1,63 @@
+name: Auto-Heal
+
+# Runs independently of any test workflow / Jenkins job. Never touches main
+# directly — it opens a PR for a human to review and merge. Results (which
+# files were broken, which got fixed, PR link) show up live in this run's
+# Summary tab as it executes, not just in the raw logs.
+
+on:
+  schedule:
+    # 7:00 AM UTC daily. Adjust to your timezone preference.
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Open a PR with any fixes found'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-heal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure git identity
+        run: |
+          git config user.email "auto-heal@github-actions.local"
+          git config user.name "Auto-Heal Bot"
+
+      - name: Run auto-heal
+        id: heal
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.pr }}" = "false" ]; then
+            npm run heal
+          else
+            npm run heal:pr
+          fi
+        continue-on-error: true
+
+      - name: Report outcome
+        if: steps.heal.outcome == 'failure'
+        run: |
+          echo "::warning::Auto-heal finished with exit code indicating some files still need manual review, or a config error occurred. Check the job summary above."

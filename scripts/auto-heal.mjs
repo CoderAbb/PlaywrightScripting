@@ -22,7 +22,7 @@
  */
 
 import { execSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -37,6 +37,18 @@ const DETECT_ONLY = args.has('--detect-only');
 
 function log(...msg) {
   console.log('[auto-heal]', ...msg);
+}
+
+/**
+ * Appends markdown to the GitHub Actions run summary (visible right in the
+ * Actions tab UI). No-op anywhere else (Jenkins, local) since
+ * GITHUB_STEP_SUMMARY is only set by the Actions runner.
+ */
+function summary(markdown) {
+  const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+  if (summaryFile) {
+    appendFileSync(summaryFile, `${markdown}\n`);
+  }
 }
 
 function run(cmd, opts = {}) {
@@ -151,10 +163,14 @@ async function fixFile(absPath, errors) {
 }
 
 async function main() {
+  summary('## 🩺 Auto-Heal Run');
+  summary(`_${new Date().toISOString()}_`);
+
   log('Checking out working tree status...');
   const status = run('git status --porcelain');
   if (status.stdout.trim() && !DRY_RUN && !DETECT_ONLY) {
     log('Working tree is not clean. Refusing to auto-heal on top of uncommitted changes.');
+    summary('❌ **Refused to run** — working tree had uncommitted changes.');
     process.exit(2);
   }
 
@@ -163,10 +179,17 @@ async function main() {
 
   if (errorsByFile.size === 0) {
     log('No TypeScript errors found. Repo is healthy. ✅');
+    summary('✅ **Repo is healthy** — no TypeScript errors found.');
     process.exit(0);
   }
 
   log(`Found issues in ${errorsByFile.size} file(s).`);
+  summary(`### ⚠️ Found issues in ${errorsByFile.size} file(s)`);
+  summary('| File | Errors |');
+  summary('| --- | --- |');
+  for (const [absPath, errors] of errorsByFile) {
+    summary(`| \`${path.relative(REPO_ROOT, absPath)}\` | ${errors.length} |`);
+  }
 
   if (DETECT_ONLY) {
     // No API calls here at all — just report what's broken. Safe to run on
@@ -179,6 +202,7 @@ async function main() {
       }
     }
     log('Detect-only mode: no fixes attempted. Run "npm run heal" or "npm run heal:pr" to auto-fix.');
+    summary('\n_Detect-only mode — no fixes attempted. The nightly auto-heal job will attempt fixes and open a PR._');
     process.exit(1);
   }
 
@@ -225,17 +249,25 @@ async function main() {
 
   if (DRY_RUN) {
     log('Dry run complete. No files were modified.');
+    summary('\n_Dry run — no files were modified._');
     process.exit(errorsByFile.size > 0 ? 1 : 0);
   }
 
   if (healedFiles.length === 0) {
     log('No files could be auto-healed. Manual review needed.');
+    summary('\n❌ **No files could be auto-healed.** Manual review needed.');
     process.exit(1);
   }
 
   log(`Healed: ${healedFiles.join(', ')}`);
   if (unhealedFiles.length > 0) {
     log(`Still broken (needs a human): ${unhealedFiles.join(', ')}`);
+  }
+  summary(`\n### ✅ Healed ${healedFiles.length} file(s)`);
+  for (const f of healedFiles) summary(`- \`${f}\``);
+  if (unhealedFiles.length > 0) {
+    summary(`\n### 🧑‍🔧 Still needs a human (${unhealedFiles.length})`);
+    for (const f of unhealedFiles) summary(`- \`${f}\``);
   }
 
   if (!OPEN_PR) {
@@ -282,11 +314,15 @@ async function main() {
     if (prResponse.ok) {
       const pr = await prResponse.json();
       log(`Opened PR: ${pr.html_url}`);
+      summary(`\n🔗 **[Opened PR #${pr.number}](${pr.html_url})**`);
     } else {
-      log(`Failed to open PR: ${prResponse.status} ${await prResponse.text()}`);
+      const errBody = await prResponse.text();
+      log(`Failed to open PR: ${prResponse.status} ${errBody}`);
+      summary(`\n❌ Failed to open PR: ${prResponse.status}`);
     }
   } else {
     log(`Pushed branch ${branch}. Set GITHUB_TOKEN + GITHUB_REPO to auto-open a PR next time.`);
+    summary(`\n📤 Pushed branch \`${branch}\`. Set \`GITHUB_TOKEN\` + \`GITHUB_REPO\` to auto-open a PR next time.`);
   }
 
   process.exit(unhealedFiles.length > 0 ? 1 : 0);
