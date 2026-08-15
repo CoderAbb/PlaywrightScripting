@@ -1,0 +1,84 @@
+// Jenkinsfile.autoheal
+//
+// Runs independently of the main test job (jenkins-config.xml) on a nightly
+// schedule. It never touches `main` directly — it opens a PR for a human to
+// review and merge. Point a new Jenkins "Pipeline" job at this file, or
+// paste its stages into an existing pipeline.
+//
+// Required Jenkins credentials (Manage Jenkins > Credentials):
+//   - anthropic-api-key   (Secret text)  -> ANTHROPIC_API_KEY
+//   - github-token        (Secret text)  -> GITHUB_TOKEN, needs repo + pull-request scope
+//
+// Required env:
+//   - GITHUB_REPO set below to your org/repo slug.
+
+pipeline {
+  agent any
+
+  triggers {
+    // Nightly at 2am. Adjust to taste, or drop this and trigger manually.
+    cron('H 2 * * *')
+  }
+
+  environment {
+    GITHUB_REPO = 'CoderAbb/PlaywrightScripting'
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Install dependencies') {
+      steps {
+        sh 'npm ci'
+      }
+    }
+
+    stage('Detect issues') {
+      steps {
+        // Non-zero exit just means issues exist; that's expected, don't fail
+        // the build here — let the heal stage decide the final outcome.
+        sh 'npm run heal:dry-run || true'
+      }
+    }
+
+    stage('Auto-heal and open PR') {
+      steps {
+        withCredentials([
+          string(credentialsId: 'anthropic-api-key', variable: 'ANTHROPIC_API_KEY'),
+          string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')
+        ]) {
+          // Configure git identity for the commit the script makes.
+          sh '''
+            git config user.email "auto-heal@ci.local"
+            git config user.name "Auto-Heal Bot"
+          '''
+          // heal:pr exits 0 (clean or fully healed) or 1 (partial/needs human).
+          // Treat 1 as "unstable" rather than a hard failure so the PR still
+          // gets opened and someone gets pinged, but the pipeline signals
+          // that manual attention is needed.
+          script {
+            def status = sh(script: 'npm run heal:pr', returnStatus: true)
+            if (status == 1) {
+              unstable('Auto-heal made partial progress; some files still need manual review.')
+            } else if (status != 0) {
+              error("auto-heal failed with exit code ${status}")
+            }
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    unstable {
+      echo 'Auto-heal opened a PR but could not fix everything automatically. Check the PR description for what still needs attention.'
+    }
+    failure {
+      echo 'Auto-heal job failed outright (config/API/git error) — check console output.'
+    }
+  }
+}

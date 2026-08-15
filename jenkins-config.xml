@@ -59,6 +59,10 @@ echo "Installing dependencies..."
 npm ci
 
 echo ""
+echo "Checking for known-fixable code issues (non-blocking)..."
+npm run heal:detect || echo "[auto-heal] Issues detected above — build continues. Run 'npm run heal:pr' or check the nightly auto-heal job to fix."
+
+echo ""
 echo "Running Playwright tests..."
 npm run test || npm test
 

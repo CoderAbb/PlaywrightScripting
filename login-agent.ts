@@ -35,6 +35,9 @@ function parseArgs(argv: string[]): CliArgs {
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
+    if (arg === undefined) {
+      continue;
+    }
     switch (arg) {
       case '--url':
         args.url = argv[i + 1] ?? '';
@@ -45,12 +48,20 @@ function parseArgs(argv: string[]): CliArgs {
       case '--password':
         args.password = argv[i + 1] ?? '';
         break;
-      case '--flow':
-        args.flowPath = argv[i + 1];
+      case '--flow': {
+        const flowPath = argv[i + 1];
+        if (flowPath !== undefined) {
+          args.flowPath = flowPath;
+        }
         break;
-      case '--out':
-        args.outPath = argv[i + 1];
+      }
+      case '--out': {
+        const outPath = argv[i + 1];
+        if (outPath !== undefined) {
+          args.outPath = outPath;
+        }
         break;
+      }
       case '--help':
       case '-h':
         printUsage();
@@ -224,9 +235,9 @@ async function main() {
       throw new Error('Could not identify a standard login form on the page.');
     }
 
-    loginSteps.push(`  await page.locator('${escapeForString(await emailField.evaluate((element) => element.getAttribute('data-test') ?? element.getAttribute('data-testid') ?? element.getAttribute('name') ?? element.getAttribute('id') ?? element.getAttribute('placeholder') ?? 'input')}').fill('${escapeForString(args.username)}');`);
-    loginSteps.push(`  await page.locator('${escapeForString(await passwordField.evaluate((element) => element.getAttribute('data-test') ?? element.getAttribute('data-testid') ?? element.getAttribute('name') ?? element.getAttribute('id') ?? 'input')}').fill('${escapeForString(args.password)}');`);
-    loginSteps.push(`  await page.locator('${escapeForString(await submitButton.evaluate((element) => element.getAttribute('data-test') ?? element.getAttribute('data-testid') ?? element.getAttribute('name') ?? element.getAttribute('id') ?? 'button')}').click();`);
+    loginSteps.push(`  await page.locator('${escapeForString(await emailField.evaluate((element) => element.getAttribute('data-test') ?? element.getAttribute('data-testid') ?? element.getAttribute('name') ?? element.getAttribute('id') ?? element.getAttribute('placeholder') ?? 'input'))}').fill('${escapeForString(args.username)}');`);
+    loginSteps.push(`  await page.locator('${escapeForString(await passwordField.evaluate((element) => element.getAttribute('data-test') ?? element.getAttribute('data-testid') ?? element.getAttribute('name') ?? element.getAttribute('id') ?? 'input'))}').fill('${escapeForString(args.password)}');`);
+    loginSteps.push(`  await page.locator('${escapeForString(await submitButton.evaluate((element) => element.getAttribute('data-test') ?? element.getAttribute('data-testid') ?? element.getAttribute('name') ?? element.getAttribute('id') ?? 'button'))}').click();`);
 
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1500);

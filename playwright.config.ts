@@ -48,9 +48,12 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        launchOptions: {
-          executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        },
+        // Use Playwright's bundled Chromium by default so the suite runs on
+        // any machine/CI agent (Jenkins Linux runners included). Only pin a
+        // system Chrome binary when explicitly opted into via env var.
+        ...(process.env.CHROME_PATH
+          ? { launchOptions: { executablePath: process.env.CHROME_PATH } }
+          : {}),
       },
     },
 

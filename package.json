@@ -10,7 +10,11 @@
     "test:debug": "playwright test --debug --workers=1 --timeout=120000",
     "test:allure": "rm -rf allure-results allure-report && playwright test --workers=1 --timeout=120000 --reporter=line,allure-playwright && npx allure generate allure-results --clean -o allure-report || true",
     "login-agent": "node ./login-agent.mjs",
-    "login-agent:edge": "node ./login-agent.mjs --edge --run"
+    "login-agent:edge": "node ./login-agent.mjs --edge --run",
+    "heal": "node ./scripts/auto-heal.mjs",
+    "heal:dry-run": "node ./scripts/auto-heal.mjs --dry-run",
+    "heal:pr": "node ./scripts/auto-heal.mjs --pr",
+    "heal:detect": "node ./scripts/auto-heal.mjs --detect-only"
   },
   "keywords": [],
   "author": "",
