@@ -40,5 +40,10 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-  }
+  },
+  // Explicit scope so auto-heal (and anyone else running `tsc`) always
+  // checks the whole repo, not whatever the implicit default happens to
+  // resolve to.
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist", "allure-report", "allure-results"]
 }

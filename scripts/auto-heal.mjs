@@ -2,9 +2,11 @@
 /**
  * auto-heal.mjs
  *
- * Scans the repo for TypeScript compile errors, asks Claude to fix each
- * broken file, re-verifies the fix actually compiles, and (in CI) commits
- * the result to a branch and opens a PR for review.
+ * Scans EVERY checkable source file in the repo — all .ts files via
+ * `tsc --noEmit`, all hand-written .mjs/.cjs files via `node --check` (tsc
+ * doesn't look at plain JS at all) — asks Claude to fix each broken file,
+ * re-verifies the fix actually resolves cleanly, and (in CI) commits the
+ * result to a branch and opens a PR for review.
  *
  * Local usage:
  *   ANTHROPIC_API_KEY=sk-... npm run heal
@@ -22,7 +24,7 @@
  */
 
 import { execSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, appendFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -62,7 +64,8 @@ function run(cmd, opts = {}) {
 
 /**
  * Runs `tsc --noEmit` and parses "file(line,col): error TSxxxx: message"
- * lines into a { file -> [messages] } map.
+ * lines into a { file -> [messages] } map. Covers every .ts file in the
+ * repo (tsconfig.json's include/exclude is repo-wide by design).
  */
 function collectTypeScriptErrors() {
   const result = run('npx tsc --noEmit --pretty false');
@@ -79,6 +82,98 @@ function collectTypeScriptErrors() {
   }
 
   return errorsByFile;
+}
+
+const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'allure-report', 'allure-results', 'test-results', 'playwright-report']);
+
+/**
+ * Recursively finds every hand-written JS source file (.mjs, .cjs) in the
+ * repo. Plain .js is deliberately excluded: in this repo .js files next to
+ * a same-named .ts file are local tsc build output, not source — checking
+ * them would just re-report the same error twice under a stale filename.
+ */
+function findJsSourceFiles(dir = REPO_ROOT) {
+  const results = [];
+  for (const entry of readdirSync(dir)) {
+    if (SKIP_DIRS.has(entry)) continue;
+    const full = path.join(dir, entry);
+    const stat = statSync(full);
+    if (stat.isDirectory()) {
+      results.push(...findJsSourceFiles(full));
+    } else if (/\.(mjs|cjs)$/.test(entry)) {
+      results.push(full);
+    }
+  }
+  return results;
+}
+
+/**
+ * `tsc` never looks at .mjs/.cjs files, so a broken auto-heal.mjs or
+ * login-agent.mjs could go undetected forever. `node --check` does a real
+ * parse (syntax only, no type info) without executing the file — exactly
+ * what we need to catch the class of bug (mismatched parens, bad template
+ * literals, etc.) that TypeScript would have caught if these were .ts.
+ */
+function collectJsSyntaxErrors() {
+  const errorsByFile = new Map();
+  for (const file of findJsSourceFiles()) {
+    const result = spawnSync('node', ['--check', file], { encoding: 'utf-8' });
+    if (result.status !== 0) {
+      const stderr = result.stderr ?? '';
+      // node's syntax error format: "<file>:<line>\n...\nSyntaxError: <msg>"
+      const lineMatch = stderr.match(/:(\d+)\n/);
+      const msgMatch = stderr.match(/SyntaxError: (.+)/);
+      errorsByFile.set(file, [
+        {
+          line: lineMatch ? Number(lineMatch[1]) : 0,
+          col: 0,
+          code: 'JS-SYNTAX',
+          message: msgMatch ? msgMatch[1].trim() : stderr.trim().split('\n').pop(),
+        },
+      ]);
+    }
+  }
+  return errorsByFile;
+}
+
+/**
+ * Merges TypeScript compiler errors (all .ts files) and JS syntax errors
+ * (all .mjs/.cjs files) into a single map covering every checkable source
+ * file in the repo.
+ */
+function collectAllErrors() {
+  const merged = new Map(collectTypeScriptErrors());
+  for (const [file, errors] of collectJsSyntaxErrors()) {
+    merged.set(file, errors);
+  }
+  return merged;
+}
+
+/**
+ * Re-checks a single file using whichever checker applies to its
+ * extension, so the per-file retry loop stays accurate for both .ts and
+ * .mjs/.cjs files instead of only ever looking at TypeScript output.
+ */
+function recheckFile(absPath) {
+  if (/\.(mjs|cjs)$/.test(absPath)) {
+    const single = new Map();
+    const result = spawnSync('node', ['--check', absPath], { encoding: 'utf-8' });
+    if (result.status !== 0) {
+      const stderr = result.stderr ?? '';
+      const lineMatch = stderr.match(/:(\d+)\n/);
+      const msgMatch = stderr.match(/SyntaxError: (.+)/);
+      single.set(absPath, [
+        {
+          line: lineMatch ? Number(lineMatch[1]) : 0,
+          col: 0,
+          code: 'JS-SYNTAX',
+          message: msgMatch ? msgMatch[1].trim() : stderr.trim().split('\n').pop(),
+        },
+      ]);
+    }
+    return single;
+  }
+  return collectTypeScriptErrors();
 }
 
 async function callClaude(systemPrompt, userPrompt) {
@@ -127,6 +222,7 @@ function stripCodeFence(text) {
 async function fixFile(absPath, errors) {
   const relPath = path.relative(REPO_ROOT, absPath);
   const original = readFileSync(absPath, 'utf-8');
+  const isJs = /\.(mjs|cjs)$/.test(absPath);
 
   const errorList = errors
     .map((e) => `  Line ${e.line}, Col ${e.col} [${e.code}]: ${e.message}`)
@@ -135,21 +231,21 @@ async function fixFile(absPath, errors) {
   const systemPrompt = [
     'You are an automated code-repair tool for a Playwright + TypeScript test',
     'automation framework. You will be given one file\'s full source and the',
-    'exact TypeScript compiler errors for that file.',
+    `exact ${isJs ? 'Node.js syntax' : 'TypeScript compiler'} errors for that file.`,
     '',
     'Rules:',
     '- Output ONLY the complete corrected file contents. No prose, no markdown',
     '  code fences, no explanation.',
     '- Make the smallest change that fixes the reported errors.',
     '- Do not change test logic, selectors, or behavior — only fix what is',
-    '  necessary to satisfy the compiler.',
+    '  necessary to satisfy the compiler/parser.',
     '- Preserve existing formatting, comments, and style conventions.',
   ].join('\n');
 
   const userPrompt = [
     `File: ${relPath}`,
     '',
-    'TypeScript errors:',
+    `${isJs ? 'Node.js syntax' : 'TypeScript'} errors:`,
     errorList,
     '',
     'Full file contents:',
@@ -174,12 +270,12 @@ async function main() {
     process.exit(2);
   }
 
-  log('Running tsc --noEmit to find issues...');
-  const errorsByFile = collectTypeScriptErrors();
+  log('Scanning entire repo: tsc for all .ts files, node --check for all .mjs/.cjs files...');
+  const errorsByFile = collectAllErrors();
 
   if (errorsByFile.size === 0) {
-    log('No TypeScript errors found. Repo is healthy. ✅');
-    summary('✅ **Repo is healthy** — no TypeScript errors found.');
+    log('No errors found across the repo. Repo is healthy. ✅');
+    summary('✅ **Repo is healthy** — no errors found in any `.ts`, `.mjs`, or `.cjs` file.');
     process.exit(0);
   }
 
@@ -215,7 +311,7 @@ async function main() {
 
     let healed = false;
     for (let attempt = 1; attempt <= MAX_FIX_ATTEMPTS_PER_FILE; attempt += 1) {
-      const currentErrors = collectTypeScriptErrors().get(absPath);
+      const currentErrors = recheckFile(absPath).get(absPath);
       if (!currentErrors || currentErrors.length === 0) {
         healed = true;
         break;
@@ -233,7 +329,7 @@ async function main() {
         break;
       }
 
-      const recheck = collectTypeScriptErrors();
+      const recheck = recheckFile(absPath);
       if (!recheck.has(absPath)) {
         log(`  Fixed ${relPath} on attempt ${attempt}. ✅`);
         healed = true;
