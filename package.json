@@ -14,7 +14,10 @@
     "heal": "node ./scripts/auto-heal.mjs",
     "heal:dry-run": "node ./scripts/auto-heal.mjs --dry-run",
     "heal:pr": "node ./scripts/auto-heal.mjs --pr",
-    "heal:detect": "node ./scripts/auto-heal.mjs --detect-only"
+    "heal:detect": "node ./scripts/auto-heal.mjs --detect-only",
+    "heal-locators": "node ./scripts/heal-locators.mjs",
+    "heal-locators:dry-run": "node ./scripts/heal-locators.mjs --dry-run",
+    "heal-locators:pr": "node ./scripts/heal-locators.mjs --pr"
   },
   "keywords": [],
   "author": "",
