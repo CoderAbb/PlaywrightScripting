@@ -1,9 +1,11 @@
 // Jenkinsfile.autoheal
 //
-// Runs independently of the main test job (jenkins-config.xml) on a nightly
-// schedule. It never touches `main` directly — it opens a PR for a human to
-// review and merge. Point a new Jenkins "Pipeline" job at this file, or
-// paste its stages into an existing pipeline.
+// Runs independently of the main test job (jenkins-config.xml).
+// On-demand only ("Build Now" in Jenkins) — the daily cron is disabled,
+// see the commented-out trigger below to re-enable it. It never touches
+// `main` directly — it opens a PR for a human to review and merge. Point a
+// new Jenkins "Pipeline" job at this file, or paste its stages into an
+// existing pipeline.
 //
 // Required Jenkins credentials (Manage Jenkins > Credentials):
 //   - anthropic-api-key   (Secret text)  -> ANTHROPIC_API_KEY
@@ -16,8 +18,11 @@ pipeline {
   agent any
 
   triggers {
-    // Nightly at 2am. Adjust to taste, or drop this and trigger manually.
-    cron('H 2 * * *')
+    // Daily cron disabled — this job only calls Claude when tsc finds a
+    // broken file, so cost was already minimal, but this keeps runs fully
+    // on-demand (Jenkins "Build Now") until you want it unattended again.
+    // To re-enable, uncomment the line below.
+    // cron('H 2 * * *')
   }
 
   environment {

@@ -180,8 +180,10 @@ npm run login-agent:edge
 
 **Where it runs:**
 
-- **GitHub Actions** (`.github/workflows/auto-heal.yml`) — runs daily at 07:00 UTC and on-demand via the Actions tab ("Run workflow"). Results stream live to the run's Summary tab (files found, files healed, PR link) as well as the raw logs. Requires an `ANTHROPIC_API_KEY` repository secret; `GITHUB_TOKEN` is provided automatically.
-- **Jenkins** — the main freestyle job (`jenkins-config.xml`) runs `npm run heal:detect` as a free, non-blocking pre-check on every build (just logs findings, never fails the build). `Jenkinsfile.autoheal` is an optional separate pipeline that mirrors the full fix-and-PR behavior for teams that want it in Jenkins instead of, or in addition to, GitHub Actions.
+- **GitHub Actions** (`.github/workflows/auto-heal.yml`) — on-demand only via the Actions tab ("Run workflow"). The daily schedule is disabled by default (commented out in the workflow file) since it's easy enough to trigger by hand; uncomment the `schedule:` block to bring back automatic runs. Results stream live to the run's Summary tab (files found, files healed, PR link) as well as the raw logs. Requires an `ANTHROPIC_API_KEY` repository secret; `GITHUB_TOKEN` is provided automatically.
+- **Jenkins** — the main freestyle job (`jenkins-config.xml`) runs `npm run heal:detect` as a free, non-blocking pre-check on every build (no API calls, just logs findings, never fails the build). `Jenkinsfile.autoheal` is an optional separate pipeline that mirrors the full fix-and-PR behavior for teams that want it in Jenkins too — also on-demand only ("Build Now"), same reasoning.
+
+> Cost note: `heal:pr`/`heal` only call the Claude API when `tsc`/`node --check` actually find a broken file — a clean repo costs nothing to check. `heal:detect` never calls Claude at all. Scheduling is disabled by default so runs (and any API spend) only happen when you trigger them.
 
 ## 🤝 Contributing
 
@@ -219,4 +221,6 @@ We love community contributions and appreciate your help in making this framewor
 
 - Add or update tests for any new functionality introduced.
 
-Happy Testing! 🎭
+---
+
+**Happy Testing! 🎭**

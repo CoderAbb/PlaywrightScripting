@@ -6,9 +6,12 @@ name: Auto-Heal
 # Summary tab as it executes, not just in the raw logs.
 
 on:
-  schedule:
-    # 7:00 AM UTC daily. Adjust to your timezone preference.
-    - cron: '0 7 * * *'
+  # Daily schedule disabled — auto-heal only calls Claude when it finds a
+  # broken file, so cost was already near-zero, but this keeps it fully
+  # on-demand until you decide you want it running unattended again.
+  # To re-enable, uncomment the schedule block below.
+  # schedule:
+  #   - cron: '0 7 * * *'
   workflow_dispatch:
     inputs:
       pr:
