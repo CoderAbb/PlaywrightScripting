@@ -1,2 +1,0 @@
-npm notice run playwrightdemo@1.0.0 npx
-npm notice run 'playwright' test --reporter=json
