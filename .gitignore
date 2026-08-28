@@ -24,3 +24,11 @@ node_modules/
 # macOS
 .DS_Store
 
+# Automation state metrics written by scripts/lib/automation-state.mjs -
+# foundation data for a future dashboard. Gitignored by default: even though
+# the module sanitizes/relativizes paths before writing, treating it as a
+# committed-by-default artifact is exactly the pattern that caused the
+# leaks earlier in this repo's history. Revisit this once there's an actual
+# consumer (dashboard, CI artifact upload) that needs it persisted in git.
+/reports/
+

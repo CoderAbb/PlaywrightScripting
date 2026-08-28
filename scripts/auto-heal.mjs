@@ -27,6 +27,13 @@ import { execSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, appendFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import {
+  createRunState,
+  recordFailure,
+  recordHealingAttempt,
+  recordHealingEvent,
+  finalizeRun,
+} from './lib/automation-state.mjs';
 
 const REPO_ROOT = process.cwd();
 const MODEL = 'claude-sonnet-4-6';
@@ -261,12 +268,14 @@ async function fixFile(absPath, errors) {
 async function main() {
   summary('## 🩺 Auto-Heal Run');
   summary(`_${new Date().toISOString()}_`);
+  const runState = createRunState({ source: 'auto-heal' });
 
   log('Checking out working tree status...');
   const status = run('git status --porcelain');
   if (status.stdout.trim() && !DRY_RUN && !DETECT_ONLY) {
     log('Working tree is not clean. Refusing to auto-heal on top of uncommitted changes.');
     summary('❌ **Refused to run** — working tree had uncommitted changes.');
+    finalizeRun(runState, 'FAILED');
     process.exit(2);
   }
 
@@ -276,6 +285,7 @@ async function main() {
   if (errorsByFile.size === 0) {
     log('No errors found across the repo. Repo is healthy. ✅');
     summary('✅ **Repo is healthy** — no errors found in any `.ts`, `.mjs`, or `.cjs` file.');
+    finalizeRun(runState, 'PASSED');
     process.exit(0);
   }
 
@@ -284,7 +294,14 @@ async function main() {
   summary('| File | Errors |');
   summary('| --- | --- |');
   for (const [absPath, errors] of errorsByFile) {
-    summary(`| \`${path.relative(REPO_ROOT, absPath)}\` | ${errors.length} |`);
+    const relPath = path.relative(REPO_ROOT, absPath);
+    summary(`| \`${relPath}\` | ${errors.length} |`);
+    recordFailure(runState, {
+      title: relPath,
+      specFile: absPath,
+      classification: /\.(mjs|cjs)$/.test(absPath) ? 'js-syntax' : 'typescript',
+      message: errors.map((e) => `[${e.code}] ${e.message}`).join('; '),
+    });
   }
 
   if (DETECT_ONLY) {
@@ -299,6 +316,7 @@ async function main() {
     }
     log('Detect-only mode: no fixes attempted. Run "npm run heal" or "npm run heal:pr" to auto-fix.');
     summary('\n_Detect-only mode — no fixes attempted. The nightly auto-heal job will attempt fixes and open a PR._');
+    finalizeRun(runState, 'HUMAN_REVIEW');
     process.exit(1);
   }
 
@@ -341,17 +359,27 @@ async function main() {
     if (DRY_RUN) continue;
     if (healed) healedFiles.push(relPath);
     else unhealedFiles.push(relPath);
+    recordHealingAttempt(runState, { successful: healed });
+    recordHealingEvent({
+      runId: runState.runId,
+      source: 'auto-heal',
+      file: absPath,
+      successful: healed,
+      reason: healed ? undefined : 'Did not fully resolve after max attempts',
+    });
   }
 
   if (DRY_RUN) {
     log('Dry run complete. No files were modified.');
     summary('\n_Dry run — no files were modified._');
+    finalizeRun(runState, 'HUMAN_REVIEW');
     process.exit(errorsByFile.size > 0 ? 1 : 0);
   }
 
   if (healedFiles.length === 0) {
     log('No files could be auto-healed. Manual review needed.');
     summary('\n❌ **No files could be auto-healed.** Manual review needed.');
+    finalizeRun(runState, 'HUMAN_REVIEW');
     process.exit(1);
   }
 
@@ -368,6 +396,7 @@ async function main() {
 
   if (!OPEN_PR) {
     log('Fixes applied locally. Re-run with --pr in CI to commit + open a pull request.');
+    finalizeRun(runState, unhealedFiles.length > 0 ? 'HUMAN_REVIEW' : 'PASSED');
     process.exit(unhealedFiles.length > 0 ? 1 : 0);
   }
 
@@ -378,6 +407,7 @@ async function main() {
   const push = run(`git push origin ${branch}`);
   if (push.status !== 0) {
     log('git push failed:', push.stderr);
+    finalizeRun(runState, 'FAILED');
     process.exit(2);
   }
 
@@ -421,6 +451,7 @@ async function main() {
     summary(`\n📤 Pushed branch \`${branch}\`. Set \`GITHUB_TOKEN\` + \`GITHUB_REPO\` to auto-open a PR next time.`);
   }
 
+  finalizeRun(runState, unhealedFiles.length > 0 ? 'HUMAN_REVIEW' : 'PASSED');
   process.exit(unhealedFiles.length > 0 ? 1 : 0);
 }
 

@@ -186,6 +186,18 @@ npm run login-agent:edge
 
 > Cost note: `heal:pr`/`heal` only call the Claude API when `tsc`/`node --check` actually find a broken file — a clean repo costs nothing to check. `heal:detect` never calls Claude at all. Scheduling is disabled by default so runs (and any API spend) only happen when you trigger them.
 
+## 📊 Automation State (dashboard foundation)
+
+Both `auto-heal.mjs` and `heal-locators.mjs` write their results through a shared module, `scripts/lib/automation-state.mjs`, into `reports/` (gitignored — see below):
+
+- `reports/automation-metrics.json` — history of the last 200 runs from either script (test/error counts, healing counts, status, timing)
+- `reports/latest-run.json` — just the most recent run, for a quick "current state" read
+- `reports/healing-history.json` — append-only log of the last 500 individual fix attempts (file, old value, new value, success/failure)
+
+The shape is documented in `types/automation-state.d.ts`. This is intentionally just the data layer — no orchestration logic, no dashboard yet — laid as a foundation both scripts already write to consistently, so a future dashboard (or a LangGraph orchestrator, if that direction gets picked up) has one place to read from instead of parsing each script's log output.
+
+`reports/` is gitignored by default. Every path field is normalized to repo-relative and every free-text field is sanitized to strip absolute filesystem paths before it's written — this repo has already leaked a local machine path into git twice via generated report files, so this module treats that as a design constraint, not an afterthought.
+
 ## 🤝 Contributing
 
 We love community contributions and appreciate your help in making this framework even better! Whether it's adding new test suites, optimizing helper utilities, or improving documentation, all contributions are welcome.

@@ -52,6 +52,14 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, appendFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import {
+  createRunState,
+  recordTestCounts,
+  recordFailure,
+  recordHealingAttempt,
+  recordHealingEvent,
+  finalizeRun,
+} from './lib/automation-state.mjs';
 
 const REPO_ROOT = process.cwd();
 const MODEL = 'claude-sonnet-4-6';
@@ -161,11 +169,21 @@ function runSuiteAndCollectFailures(specFile = null) {
 
   const specs = flattenSpecs(report.suites);
   const failures = [];
+  const counts = { total: 0, passed: 0, failed: 0, skipped: 0 };
 
   for (const spec of specs) {
     for (const test of spec.tests ?? []) {
       for (const res of test.results ?? []) {
-        if (res.status === 'passed') continue;
+        counts.total += 1;
+        if (res.status === 'passed') {
+          counts.passed += 1;
+          continue;
+        }
+        if (res.status === 'skipped') {
+          counts.skipped += 1;
+          continue;
+        }
+        counts.failed += 1;
         const message = [res.error?.message, res.error?.stack].filter(Boolean).join('\n');
         if (!message) continue;
         failures.push({
@@ -178,7 +196,7 @@ function runSuiteAndCollectFailures(specFile = null) {
     }
   }
 
-  return { failures, allPassed: failures.length === 0, ranAtAll: true, exitCode: result.status };
+  return { failures, counts, allPassed: failures.length === 0, ranAtAll: true, exitCode: result.status };
 }
 
 // ---------------------------------------------------------------------------
@@ -385,32 +403,45 @@ async function healOneFailure(failure, chromium) {
 async function main() {
   summary('## 🔧 Locator Auto-Heal Run');
   summary(`_${new Date().toISOString()}_`);
+  const runState = createRunState({ source: 'heal-locators' });
 
   const status = run('git status --porcelain');
   if (status.stdout.trim() && !DRY_RUN) {
     log('Working tree is not clean. Refusing to run.');
     summary('❌ **Refused to run** — working tree had uncommitted changes.');
     cleanupReportFile();
+    finalizeRun(runState, 'FAILED');
     process.exit(2);
   }
 
   log('Running the full Playwright suite (this can take a while)...');
-  const { failures, ranAtAll } = runSuiteAndCollectFailures();
+  const { failures, counts, ranAtAll } = runSuiteAndCollectFailures();
+  if (counts) recordTestCounts(runState, counts);
 
   if (!ranAtAll) {
     log('Playwright suite did not produce a usable report — check that browsers are installed (npx playwright install) and the suite can run in this environment.');
     summary('❌ Suite did not run — check that `npx playwright install` has been run in this environment.');
     cleanupReportFile();
+    finalizeRun(runState, 'FAILED');
     process.exit(2);
   }
 
   const locatorFailures = failures.filter((f) => f.isLocatorFailure);
   const otherFailures = failures.filter((f) => !f.isLocatorFailure);
+  for (const f of failures) {
+    recordFailure(runState, {
+      title: f.title,
+      specFile: f.specFile,
+      classification: f.isLocatorFailure ? 'locator' : 'other',
+      message: f.message,
+    });
+  }
 
   if (locatorFailures.length === 0) {
     log(`No locator failures found (${otherFailures.length} other failure(s), if any, are left for a human).`);
     summary(`✅ **No locator failures found.** (${otherFailures.length} other failing test(s), if any, are unrelated to locators and untouched.)`);
     cleanupReportFile();
+    finalizeRun(runState, otherFailures.length > 0 ? 'HUMAN_REVIEW' : 'PASSED');
     process.exit(0);
   }
 
@@ -424,6 +455,17 @@ async function main() {
   for (const failure of locatorFailures) {
     log(`Healing: ${failure.title} (${failure.specFile})`);
     const result = await healOneFailure(failure, chromium);
+    recordHealingAttempt(runState, { successful: !!result.healed });
+    recordHealingEvent({
+      runId: runState.runId,
+      source: 'heal-locators',
+      file: result.file ?? failure.specFile,
+      line: result.line,
+      oldValue: result.oldCall,
+      newValue: result.newCall,
+      successful: !!result.healed,
+      reason: result.healed ? undefined : result.reason,
+    });
     if (result.healed) {
       log(`  ✅ ${result.file}:${result.line} — ${result.oldCall} -> ${result.newCall}`);
       healed.push({ ...result, title: failure.title });
@@ -439,16 +481,19 @@ async function main() {
 
   if (DRY_RUN) {
     log('Dry run complete. No files were modified.');
+    finalizeRun(runState, 'HUMAN_REVIEW');
     process.exit(locatorFailures.length > 0 ? 1 : 0);
   }
 
   if (healed.length === 0) {
     log('No locator failures could be auto-healed.');
+    finalizeRun(runState, 'HUMAN_REVIEW');
     process.exit(1);
   }
 
   if (!OPEN_PR) {
     log(`Healed ${healed.length} locator(s) locally. Re-run with --pr in CI to commit + open a pull request.`);
+    finalizeRun(runState, unhealed.length > 0 ? 'HUMAN_REVIEW' : 'PASSED');
     process.exit(unhealed.length > 0 ? 1 : 0);
   }
 
@@ -460,6 +505,7 @@ async function main() {
   const push = run(`git push origin ${branch}`);
   if (push.status !== 0) {
     log('git push failed:', push.stderr);
+    finalizeRun(runState, 'FAILED');
     process.exit(2);
   }
 
@@ -495,6 +541,7 @@ async function main() {
     log(`Pushed branch ${branch}. Set GITHUB_TOKEN + GITHUB_REPO to auto-open a PR next time.`);
   }
 
+  finalizeRun(runState, unhealed.length > 0 ? 'HUMAN_REVIEW' : 'PASSED');
   process.exit(unhealed.length > 0 ? 1 : 0);
 }
 
