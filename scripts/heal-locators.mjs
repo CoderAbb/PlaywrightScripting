@@ -57,6 +57,18 @@ const REPO_ROOT = process.cwd();
 const MODEL = 'claude-sonnet-4-6';
 const JSON_REPORT_PATH = path.join(REPO_ROOT, '.heal-locators-report.json');
 
+/**
+ * Deletes the scratch report file(s). This is called on EVERY exit path
+ * from main(), because the report is a full Playwright JSON dump — it
+ * contains absolute local file paths and machine info from every stack
+ * trace and must never be left on disk where a future `git add -A` could
+ * accidentally commit it (this exact thing happened once already).
+ */
+function cleanupReportFile() {
+  if (existsSync(JSON_REPORT_PATH)) run(`rm -f "${JSON_REPORT_PATH}"`);
+  if (existsSync(`${JSON_REPORT_PATH}.stderr`)) run(`rm -f "${JSON_REPORT_PATH}.stderr"`);
+}
+
 const args = new Set(process.argv.slice(2));
 const DRY_RUN = args.has('--dry-run');
 const OPEN_PR = args.has('--pr');
@@ -378,6 +390,7 @@ async function main() {
   if (status.stdout.trim() && !DRY_RUN) {
     log('Working tree is not clean. Refusing to run.');
     summary('❌ **Refused to run** — working tree had uncommitted changes.');
+    cleanupReportFile();
     process.exit(2);
   }
 
@@ -387,6 +400,7 @@ async function main() {
   if (!ranAtAll) {
     log('Playwright suite did not produce a usable report — check that browsers are installed (npx playwright install) and the suite can run in this environment.');
     summary('❌ Suite did not run — check that `npx playwright install` has been run in this environment.');
+    cleanupReportFile();
     process.exit(2);
   }
 
@@ -396,6 +410,7 @@ async function main() {
   if (locatorFailures.length === 0) {
     log(`No locator failures found (${otherFailures.length} other failure(s), if any, are left for a human).`);
     summary(`✅ **No locator failures found.** (${otherFailures.length} other failing test(s), if any, are unrelated to locators and untouched.)`);
+    cleanupReportFile();
     process.exit(0);
   }
 
@@ -420,7 +435,7 @@ async function main() {
     }
   }
 
-  if (existsSync(JSON_REPORT_PATH)) run(`rm -f "${JSON_REPORT_PATH}" "${JSON_REPORT_PATH}.stderr"`);
+  cleanupReportFile();
 
   if (DRY_RUN) {
     log('Dry run complete. No files were modified.');
@@ -485,5 +500,6 @@ async function main() {
 
 main().catch((err) => {
   console.error('[heal-locators] Fatal error:', err);
+  cleanupReportFile();
   process.exit(2);
 });

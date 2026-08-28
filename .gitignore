@@ -11,3 +11,10 @@ node_modules/
 /allure-report/
 /allure-results/
 
+# heal-locators.mjs scratch report - contains raw local file paths from
+# stack traces, must never be committed (see auto-heal.mjs's summary()
+# equivalent - this one is deleted by the script itself on every exit path,
+# this is just defense-in-depth)
+/.heal-locators-report.json
+/.heal-locators-report.json.stderr
+
