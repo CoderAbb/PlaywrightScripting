@@ -17,7 +17,10 @@
     "heal:detect": "node ./scripts/auto-heal.mjs --detect-only",
     "heal-locators": "node ./scripts/heal-locators.mjs",
     "heal-locators:dry-run": "node ./scripts/heal-locators.mjs --dry-run",
-    "heal-locators:pr": "node ./scripts/heal-locators.mjs --pr"
+    "heal-locators:pr": "node ./scripts/heal-locators.mjs --pr",
+    "orchestrate": "node ./graph/automationGraph.mjs",
+    "orchestrate:pr": "node ./graph/automationGraph.mjs --pr",
+    "orchestrate:diagram": "node ./graph/automationGraph.mjs --diagram"
   },
   "keywords": [],
   "author": "",
@@ -29,5 +32,9 @@
     "allure-playwright": "^3.9.0",
     "ts-node": "^10.9.2",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@langchain/core": "^1.2.9",
+    "@langchain/langgraph": "^1.4.13"
   }
 }
