@@ -18,3 +18,9 @@ node_modules/
 /.heal-locators-report.json
 /.heal-locators-report.json.stderr
 
+# Playwright auth storage state - can contain live session cookies/tokens
+/.auth/
+
+# macOS
+.DS_Store
+
