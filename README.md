@@ -153,6 +153,22 @@ npm run test:allure
 npx allure open allure-report
 ```
 
+**Live report while tests run** — Allure 3's `watch` command refreshes the report in your browser as results come in, instead of waiting for the whole suite to finish. Run in a separate terminal from your test command:
+
+```bash
+npm run report:watch
+# then, in another terminal:
+npx playwright test --reporter=line,allure-playwright
+```
+
+**AI-friendly failure analysis** — `agent inspect` reads existing `allure-results/` and produces structured markdown/JSONL output (clean separated error/trace per test, run summary, findings) instead of raw logs. Useful for manual debugging or feeding into another tool:
+
+```bash
+npm run report:agent-inspect
+```
+
+`scripts/heal-locators.mjs` already uses this internally: it runs the suite with `allure-playwright` alongside its own JSON reporter, then calls `agent inspect` to pull a cleanly-parsed error/trace section for the failing test as extra context in the Claude locator-fix prompt. This is best-effort — if `agent inspect` isn't available or finds nothing, healing falls back to the same detection/fix logic that already worked without it.
+
 ## 🤖 Login Agent (AI-Assisted Test Generation)
 
 `login-agent.ts` is a CLI tool that points at any URL, heuristically discovers the email/password/submit fields on the page, performs a live login, and writes out a ready-to-run Playwright spec (`generated.spec.ts` by default) from what it did. Optional follow-up steps (clicks, fills, assertions) can be supplied via a JSON flow file — see `flow.example.json`.

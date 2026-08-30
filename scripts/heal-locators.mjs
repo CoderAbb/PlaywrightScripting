@@ -49,9 +49,11 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, appendFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, appendFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import crypto from 'node:crypto';
 import {
   createRunState,
   recordTestCounts,
@@ -150,8 +152,15 @@ function flattenSpecs(suites, out = []) {
 
 function runSuiteAndCollectFailures(specFile = null) {
   const target = specFile ? `"${specFile}"` : '';
+  // json is the reporter we actually parse (piped to our own JSON_REPORT_PATH
+  // via stdout). allure-playwright rides alongside it purely as a side effect
+  // — it writes its own files to allure-results/ independently, which lets us
+  // optionally enrich a failure via `allure agent inspect` afterward. If that
+  // enrichment step fails for any reason, detection/healing still works off
+  // the json reporter exactly as before — allure-playwright here is additive,
+  // never load-bearing.
   const result = run(
-    `npx playwright test ${target} --reporter=json > "${JSON_REPORT_PATH}" 2>"${JSON_REPORT_PATH}.stderr"`,
+    `npx playwright test ${target} --reporter=json,allure-playwright > "${JSON_REPORT_PATH}" 2>"${JSON_REPORT_PATH}.stderr"`,
   );
 
   if (!existsSync(JSON_REPORT_PATH)) {
@@ -261,6 +270,57 @@ function resolveUrlExpression(expression) {
 }
 
 // ---------------------------------------------------------------------------
+// Optional enrichment: Allure 3's `agent inspect` gives structured, cleanly
+// separated error/trace text for a failed test — genuinely better-parsed
+// than what we get from grepping the raw JSON reporter stack trace. This is
+// pure enrichment: best-effort, wrapped so any failure here (allure not
+// available, no allure-results produced, test not found in the manifest)
+// silently falls back to no enrichment rather than breaking detection/healing,
+// which already worked fine before this existed.
+// ---------------------------------------------------------------------------
+
+function getAgentInspectContext(failureTitle) {
+  const resultsDir = path.join(REPO_ROOT, 'allure-results');
+  if (!existsSync(resultsDir) || readdirSync(resultsDir).length === 0) return null;
+
+  const outputDir = path.join(tmpdir(), `heal-locators-agent-inspect-${crypto.randomUUID()}`);
+  try {
+    const inspect = run(
+      `npx allure agent inspect "${resultsDir}" --output "${outputDir}" --report off`,
+    );
+    if (inspect.status !== 0) return null;
+
+    const testsManifest = path.join(outputDir, 'manifest', 'tests.jsonl');
+    if (!existsSync(testsManifest)) return null;
+
+    const lines = readFileSync(testsManifest, 'utf-8').split('\n').filter(Boolean);
+    const entry = lines
+      .map((l) => {
+        try {
+          return JSON.parse(l);
+        } catch {
+          return null;
+        }
+      })
+      .find((t) => t && t.full_name && t.full_name.includes(failureTitle));
+    if (!entry?.markdown_path) return null;
+
+    const mdPath = path.join(outputDir, entry.markdown_path);
+    if (!existsSync(mdPath)) return null;
+
+    const markdown = readFileSync(mdPath, 'utf-8');
+    // Just the Error section — the rest (labels, attachments manifest, etc.)
+    // isn't useful context for a locator-fix prompt.
+    const errorSection = markdown.match(/### Error\n\n([\s\S]*?)(?=\n###|\n##|$)/);
+    return errorSection ? errorSection[1].trim() : null;
+  } catch {
+    return null;
+  } finally {
+    if (existsSync(outputDir)) rmSync(outputDir, { recursive: true, force: true });
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Step 3: ask Claude for a working locator, given the live page
 // ---------------------------------------------------------------------------
 
@@ -273,7 +333,7 @@ function trimDom(html, maxChars = 40_000) {
   return stripped.length > maxChars ? `${stripped.slice(0, maxChars)}\n<!-- truncated -->` : stripped;
 }
 
-async function proposeNewLocator({ oldCall, errorMessage, url, dom }) {
+async function proposeNewLocator({ oldCall, errorMessage, url, dom, agentInspectContext }) {
   const systemPrompt = [
     'You repair broken Playwright locators for a test automation framework.',
     'You will be given the OLD locator call that used to work, the error it',
@@ -296,6 +356,9 @@ async function proposeNewLocator({ oldCall, errorMessage, url, dom }) {
     `Old locator call: ${oldCall}`,
     `Error: ${errorMessage.split('\n')[0]}`,
     `Page URL: ${url}`,
+    ...(agentInspectContext
+      ? ['', 'Additional structured failure context (from Allure agent inspect):', '---', agentInspectContext, '---']
+      : []),
     '',
     'Current live DOM (scripts/styles stripped, may be truncated):',
     '---',
@@ -355,11 +418,14 @@ async function healOneFailure(failure, chromium) {
     await page.close().catch(() => {});
   }
 
+  const agentInspectContext = getAgentInspectContext(failure.title);
+
   const newCall = await proposeNewLocator({
     oldCall: extracted.oldCall,
     errorMessage: failure.message,
     url,
     dom,
+    agentInspectContext,
   });
   if (!newCall) {
     return { healed: false, reason: `Claude found no matching element on ${url} for "${extracted.oldCall}".` };
