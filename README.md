@@ -72,9 +72,8 @@ PlaywrightScripting/
 ├── package.json                  # Dependencies and project scripts
 └── README.md                     # Project documentation
 ```
-<img width="1421" height="806" alt="Screenshot 2026-08-28 at 11 16 40 AM" src="https://github.com/user-attachments/assets/02624f46-7153-4806-940d-c2d433a8c121" />
+<img width="1426" height="797" alt="Screenshot 2026-08-30 at 4 54 50 PM" src="https://github.com/user-attachments/assets/16c57a2a-cea9-437f-afd0-babef7b3d593" />
 
-> `allure-results/` and `allure-report/` are generated locally by `npm run test:allure` and are gitignored — they are not committed to the repo.
 
 ## 🛠️ Getting Started
 
