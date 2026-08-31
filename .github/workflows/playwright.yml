@@ -26,15 +26,13 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
-
-      - name: Create auth directory
-        run: mkdir -p ./.auth
+        run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
         run: npm run test:allure
         env:
           CI: true
+
 
       - name: Upload Allure HTML report
         if: ${{ !cancelled() }}
