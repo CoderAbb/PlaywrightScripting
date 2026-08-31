@@ -14,7 +14,7 @@ import globalSetup from './global-setup.js';
  */
 export default defineConfig({
 
-  ...(process.env.CI ? {} : { globalSetup: './global-setup.ts' }),
+  globalSetup: './global-setup.ts',
 
   testDir: './tests',
   /* Run tests in files in parallel */
