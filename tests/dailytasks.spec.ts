@@ -30,21 +30,16 @@ test('test @dailytasks', async ({ page }: { page: Page }) => {
 
   await page.goto(TODO_URL);
   await addTasks(page, tasks);
-
-  // mark some tasks completed
   await toggleTasks(page, ['rest', 'buy grocery']);
 
-  // navigate around filters
   await nav(page, 'Active');
   await nav(page, 'Completed');
   await nav(page, 'Active');
 
-  // assertions
   await expect(todoItemToggle(page, 'play')).toBeVisible();
   await expect(page.getByText('go for walk')).toBeVisible();
   await expect(page.getByTestId('todo-list')).toContainText('go for walk');
 
-  // clear completed and return to All
   await page.getByRole('button', { name: 'Clear completed' }).click();
   await nav(page, 'All');
 });

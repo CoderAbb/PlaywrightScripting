@@ -21,8 +21,8 @@ const GUEST: GuestInfo = {
   address1: CHECKOUT_ADDRESS,
   city: CHECKOUT_CITY,
   postCode: CHECKOUT_POST_CODE,
-  countryValue: '223', // value attr for country select
-  zoneValue: '3659',   // value attr for zone select
+  countryValue: '223',
+  zoneValue: '3659',
 };
 
 test('checkout @check', async ({ page }) => {

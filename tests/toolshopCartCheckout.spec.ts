@@ -10,16 +10,6 @@ import {
 import { ToolshopProductPage } from '../pages/ToolshopProductPage.js';
 import { ToolshopCartPage } from '../pages/ToolshopCartPage.js';
 import { ToolshopCheckoutPage } from '../pages/ToolshopCheckoutPage.js';
-
-/**
- * End-to-end regression flow for the Toolshop demo app
- * (https://practicesoftwaretesting.com):
- *   1. Search for and add multiple products to the cart
- *   2. Verify the cart reflects the added items
- *   3. Check out as a guest
- *   4. Fill in the billing address
- *   5. Pay via Cash on Delivery and place the order
- */
 test('add items to cart, guest checkout, and place order @toolshop-checkout', async ({ page }) => {
   const productPage = new ToolshopProductPage(page);
   const cartPage = new ToolshopCartPage(page);
