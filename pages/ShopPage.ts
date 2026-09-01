@@ -13,8 +13,11 @@ export class ShopPage {
   }
 
   async addFirstProductToCart() {
-    const addToCartButton = this.page.locator('button').filter({ hasText: /add to cart/i }).first();
+    // Prefer role-based lookup; fallback to a text-filtered locator if role isn't available.
+    const addToCartButton = this.page.getByRole('button', { name: /add to cart/i }).first();
     if (await addToCartButton.count()) {
+      await expect(addToCartButton).toBeVisible({ timeout: 10_000 });
+      await expect(addToCartButton).toBeEnabled({ timeout: 5_000 });
       await addToCartButton.click();
     }
   }

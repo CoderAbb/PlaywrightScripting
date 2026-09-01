@@ -72,9 +72,8 @@ PlaywrightScripting/
 ├── package.json                  # Dependencies and project scripts
 └── README.md                     # Project documentation
 ```
-<img width="1421" height="806" alt="Screenshot 2026-08-28 at 11 16 40 AM" src="https://github.com/user-attachments/assets/02624f46-7153-4806-940d-c2d433a8c121" />
+<img width="1426" height="797" alt="Screenshot 2026-08-30 at 4 54 50 PM" src="https://github.com/user-attachments/assets/16c57a2a-cea9-437f-afd0-babef7b3d593" />
 
-> `allure-results/` and `allure-report/` are generated locally by `npm run test:allure` and are gitignored — they are not committed to the repo.
 
 ## 🛠️ Getting Started
 
@@ -152,6 +151,22 @@ npx playwright show-trace trace.zip
 npm run test:allure
 npx allure open allure-report
 ```
+
+**Live report while tests run** — Allure 3's `watch` command refreshes the report in your browser as results come in, instead of waiting for the whole suite to finish. Run in a separate terminal from your test command:
+
+```bash
+npm run report:watch
+# then, in another terminal:
+npx playwright test --reporter=line,allure-playwright
+```
+
+**AI-friendly failure analysis** — `agent inspect` reads existing `allure-results/` and produces structured markdown/JSONL output (clean separated error/trace per test, run summary, findings) instead of raw logs. Useful for manual debugging or feeding into another tool:
+
+```bash
+npm run report:agent-inspect
+```
+
+`scripts/heal-locators.mjs` already uses this internally: it runs the suite with `allure-playwright` alongside its own JSON reporter, then calls `agent inspect` to pull a cleanly-parsed error/trace section for the failing test as extra context in the Claude locator-fix prompt. This is best-effort — if `agent inspect` isn't available or finds nothing, healing falls back to the same detection/fix logic that already worked without it.
 
 ## 🤖 Login Agent (AI-Assisted Test Generation)
 

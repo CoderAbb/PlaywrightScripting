@@ -8,7 +8,7 @@
     "test": "playwright test --workers=1 --timeout=120000",
     "test:ui": "playwright test --headed --project=chromium --workers=1 --timeout=120000",
     "test:debug": "playwright test --debug --workers=1 --timeout=120000",
-    "test:allure": "rm -rf allure-results allure-report && playwright test --workers=1 --timeout=120000 --reporter=line,allure-playwright && npx allure generate allure-results --clean -o allure-report || true",
+    "test:allure": "npx allure run -- npx playwright test --workers=1 --timeout=120000 --reporter=line,allure-playwright",
     "login-agent": "node ./login-agent.mjs",
     "login-agent:edge": "node ./login-agent.mjs --edge --run",
     "heal": "node ./scripts/auto-heal.mjs",
@@ -18,6 +18,8 @@
     "heal-locators": "node ./scripts/heal-locators.mjs",
     "heal-locators:dry-run": "node ./scripts/heal-locators.mjs --dry-run",
     "heal-locators:pr": "node ./scripts/heal-locators.mjs --pr",
+    "report:watch": "npx allure watch allure-results",
+    "report:agent-inspect": "npx allure agent inspect allure-results",
     "orchestrate": "node ./graph/automationGraph.mjs",
     "orchestrate:pr": "node ./graph/automationGraph.mjs --pr",
     "orchestrate:diagram": "node ./graph/automationGraph.mjs --diagram"
@@ -28,7 +30,7 @@
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@types/node": "^24.13.3",
-    "allure-commandline": "^2.31.0",
+    "allure": "^3.16.0",
     "allure-playwright": "^3.9.0",
     "ts-node": "^10.9.2",
     "typescript": "^7.0.2"

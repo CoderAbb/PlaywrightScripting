@@ -8,11 +8,15 @@ export class CartPage {
   }
 
   async proceedToCheckout() {
-    const checkoutLink = this.page.getByRole('link', { name: /proceed to checkout/i }).or(this.page.getByRole('link', { name: /checkout/i }));
+    const checkoutLink = this.page
+      .getByRole('link', { name: /proceed to checkout/i })
+      .or(this.page.getByRole('link', { name: /checkout/i }))
+      .first();
+
     if (await checkoutLink.count()) {
-      await checkoutLink.first().evaluate((element) => {
-        (element as HTMLElement).click();
-      });
+      await expect(checkoutLink).toBeVisible({ timeout: 10_000 });
+      // Click via Playwright action rather than evaluate to be more robust.
+      await checkoutLink.click();
     }
   }
 

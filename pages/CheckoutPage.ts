@@ -14,14 +14,18 @@ export class CheckoutPage {
   }
 
   async submit() {
-    const continueButton = this.page.getByRole('button', { name: /continue/i });
+    const continueButton = this.page.getByRole('button', { name: /continue/i }).first();
     if (await continueButton.count()) {
-      await continueButton.first().click();
+      await expect(continueButton).toBeVisible({ timeout: 10_000 });
+      await expect(continueButton).toBeEnabled({ timeout: 5_000 });
+      await continueButton.click();
       return;
     }
 
     const fallback = this.page.locator('button:has-text("Continue"), button:has-text("Place Order")').first();
     if (await fallback.count()) {
+      await expect(fallback).toBeVisible({ timeout: 10_000 });
+      await expect(fallback).toBeEnabled({ timeout: 5_000 });
       await fallback.click();
     }
   }
