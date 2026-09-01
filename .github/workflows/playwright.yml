@@ -25,16 +25,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-
       - name: Run Playwright tests
-        # Allure 3 (`allure` package + allurerc.mjs) replaced allure-commandline
-        # (Allure 2, Java-based) here. `npm run test:allure` now runs
-        # `npx allure run -- npx playwright test ...`, which executes the
-        # suite and generates the report in one step — no separate
-        # `allure generate` call, no Java runtime needed.
         run: npm run test:allure
         env:
           CI: true
