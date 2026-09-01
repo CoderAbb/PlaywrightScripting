@@ -36,9 +36,14 @@ export class ToolshopProductPage {
       const quantityInput = this.page.locator('[data-test="quantity"]');
       await quantityInput.fill(String(quantity));
     }
-    await this.page.locator('[data-test="add-to-cart"]').click();
+
+    const addToCart = this.page.getByRole('button', { name: /add to cart/i }).or(this.page.locator('[data-test="add-to-cart"]')).first();
+    await expect(addToCart).toBeVisible({ timeout: 10_000 });
+    await expect(addToCart).toBeEnabled({ timeout: 5_000 });
+    await addToCart.click();
+
     // The header cart badge updates once the add-to-cart request resolves.
-    await expect(this.page.locator('[data-test="cart-quantity"]')).toBeVisible();
+    await expect(this.page.locator('[data-test="cart-quantity"]')).toBeVisible({ timeout: 10_000 });
   }
 
   /** Convenience: search, open, and add a single product to the cart by name. */
