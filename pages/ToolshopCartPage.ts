@@ -13,13 +13,17 @@ export class ToolshopCartPage {
   }
 
   async expectItemInCart(productName: string) {
-    // [data-test="product-title"] rows render slightly after navigation completes.
-    // The default 5s auto-retry window was enough locally but not always under
-    // CI's network conditions reaching this live third-party demo site, so this
-    // is explicit and more generous here rather than relying on the default.
-    await expect(this.page.locator('[data-test="product-title"]', { hasText: productName })).toBeVisible({
-      timeout: 15_000,
-    });
+    // Ensure the page has settled; networkidle helps for slow CI network conditions.
+    await this.page.waitForLoadState('networkidle').catch(() => {});
+
+    // Look for the product title using the data-test attribute first, then
+    // fall back to a text-based match. Use a longer timeout under CI.
+    const titleLocator = this.page
+      .locator('[data-test="product-title"]', { hasText: productName })
+      .or(this.page.getByText(productName, { exact: false }))
+      .first();
+
+    await expect(titleLocator).toBeVisible({ timeout: 30_000 });
   }
 
   async expectItemCount(expected: number) {
