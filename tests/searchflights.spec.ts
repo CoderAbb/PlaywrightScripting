@@ -9,8 +9,8 @@ test('searchflights @flights', async ({ page }) => {
   await page1.locator('#ctl00_mainContent_ddl_originStation1_CTXT').click();
   await page1.locator('#ctl00_mainContent_ddl_destinationStation1_CTXT').click();
 
-  fillifpresent(page1, 'Chennai (MAA)', { timeout: 2000 });
-  fillifpresent(page1, 'Bengaluru (BLR)', { timeout: 2000 });
+  await fillifpresent(page1, 'Chennai (MAA)', { timeout: 2000 });
+  await fillifpresent(page1, 'Bengaluru (BLR)', { timeout: 2000 });
 
   async function fillifpresent(page: any, text: string, options?: { timeout?: number }) {
   if (await page.getByRole('link', { name: text }).isVisible({ timeout: options?.timeout })) {

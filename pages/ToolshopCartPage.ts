@@ -13,9 +13,13 @@ export class ToolshopCartPage {
   }
 
   async expectItemInCart(productName: string) {
-    // [data-test="product-title"] rows render slightly after navigation completes,
-    // so rely on Playwright's auto-retrying assertion rather than a fixed wait.
-    await expect(this.page.locator('[data-test="product-title"]', { hasText: productName })).toBeVisible();
+    // [data-test="product-title"] rows render slightly after navigation completes.
+    // The default 5s auto-retry window was enough locally but not always under
+    // CI's network conditions reaching this live third-party demo site, so this
+    // is explicit and more generous here rather than relying on the default.
+    await expect(this.page.locator('[data-test="product-title"]', { hasText: productName })).toBeVisible({
+      timeout: 15_000,
+    });
   }
 
   async expectItemCount(expected: number) {
