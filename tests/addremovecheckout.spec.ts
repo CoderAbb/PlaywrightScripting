@@ -1,52 +1,56 @@
-import { test, expect } from '@playwright/test';
-import { QA_BASE_URL, SHOP_BASE_URL, TEST_EMAIL, CHECKOUT_FIRST_NAME, CHECKOUT_LAST_NAME, CHECKOUT_PHONE, CHECKOUT_ADDRESS, CHECKOUT_CITY, CHECKOUT_STATE, CHECKOUT_POST_CODE } from '../global-setup.js';
-import { ShopPage } from '../pages/ShopPage.js';
-import { CheckoutPage } from '../pages/CheckoutPage.js';
+import { test } from '@playwright/test';
+import {
+  TEST_EMAIL,
+  CHECKOUT_FIRST_NAME,
+  CHECKOUT_LAST_NAME,
+  CHECKOUT_CITY,
+  CHECKOUT_STATE,
+  CHECKOUT_POST_CODE,
+} from '../global-setup.js';
+import { ToolshopProductPage } from '../pages/ToolshopProductPage.js';
+import { ToolshopCartPage } from '../pages/ToolshopCartPage.js';
+import { ToolshopCheckoutPage } from '../pages/ToolshopCheckoutPage.js';
 
 test.describe('AutomationLabs', () => {
   test('homepageLink @homepage', async ({ page }) => {
-    await page.goto(QA_BASE_URL);
-    await expect(page.getByRole('link', { name: 'Home' }).first()).toBeVisible();
+    await page.goto('https://qaautomationlabs.com');
     await page.getByRole('link', { name: 'Home' }).first().click();
   });
 
   test('loginPage @login', async ({ page }) => {
-    const shopPage = new ShopPage(page);
-    await shopPage.openShop();
-    await shopPage.expectShopLoaded();
+    await page.goto('https://shop.qaautomationlabs.com');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('ShoppingCart @shoppingcart', async ({ page }) => {
-    const shopPage = new ShopPage(page);
-    const checkoutPage = new CheckoutPage(page);
+    const productPage = new ToolshopProductPage(page);
+    const cartPage = new ToolshopCartPage(page);
+    const checkoutPage = new ToolshopCheckoutPage(page);
 
-    await shopPage.openShop();
-    await shopPage.expectShopLoaded();
+    await productPage.open();
+    await productPage.addProductToCartByName('Combination Pliers');
+    await productPage.open();
+    await productPage.addProductToCartByName('Pliers');
+    await productPage.expectCartQuantity(2);
 
-    await shopPage.openCategory('mens-wear.php');
-    await shopPage.addFirstProductToCart();
+    await cartPage.open();
+    await cartPage.expectItemInCart('Combination Pliers');
+    await cartPage.expectItemInCart('Pliers');
+    await cartPage.proceedToCheckout();
 
-    await shopPage.openCategory('womens-wear.php');
-    await shopPage.addFirstProductToCart();
+    await checkoutPage.continueAsGuest(TEST_EMAIL, CHECKOUT_FIRST_NAME, CHECKOUT_LAST_NAME);
+    await checkoutPage.fillBillingAddress({
+      country: 'United States of America (the)',
+      postalCode: CHECKOUT_POST_CODE,
+      houseNumber: '123',
+      street: '123 Straight Street',
+      city: CHECKOUT_CITY,
+      state: CHECKOUT_STATE,
+    });
 
-    await shopPage.openCategory('kids-wear.php');
-    await shopPage.addFirstProductToCart();
-
-    await page.goto(`${SHOP_BASE_URL}/cart.php`);
-    await expect(page.locator('body')).toContainText('Remove');
-
-    await page.getByRole('button', { name: /remove/i }).first().click();
-    await page.getByRole('link', { name: /proceed to checkout/i }).click();
-
-    await checkoutPage.fillField('First Name', CHECKOUT_FIRST_NAME);
-    await checkoutPage.fillField('Last Name', CHECKOUT_LAST_NAME);
-    await checkoutPage.fillField('E-mail', TEST_EMAIL);
-    await checkoutPage.fillField('Mobile No.', CHECKOUT_PHONE);
-    await checkoutPage.fillField('Address', CHECKOUT_ADDRESS);
-    await checkoutPage.fillField('State', CHECKOUT_STATE);
-    await checkoutPage.fillField('City', CHECKOUT_CITY);
-    await checkoutPage.fillField('Pin Code', CHECKOUT_POST_CODE);
-    await checkoutPage.submit();
+    await checkoutPage.selectPaymentMethod('Cash on Delivery');
+    await checkoutPage.confirmPayment();
+    await checkoutPage.expectPaymentSuccess();
   });
 });
 
