@@ -42,11 +42,10 @@ export class ToolshopProductPage {
     await expect(addToCart).toBeEnabled({ timeout: 5_000 });
     await addToCart.click();
 
-    // The header cart badge updates once the add-to-cart request resolves.
+
     await expect(this.page.locator('[data-test="cart-quantity"]')).toBeVisible({ timeout: 10_000 });
   }
 
-  /** Convenience: search, open, and add a single product to the cart by name. */
   async addProductToCartByName(productName: string, quantity = 1) {
     await this.searchFor(productName);
     await this.openProductByName(productName);
