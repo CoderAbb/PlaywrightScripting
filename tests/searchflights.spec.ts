@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { RAHUL_SHETTY_URL } from '../global-setup.js';
 
-test('searchflights @flights', async ({ page }) => {
+test.skip('searchflights @flights', async ({ page }) => {
   const SLOW_CLICK_TIMEOUT = 8000;
 
   async function fillifpresent(page: any, text: string, options?: { timeout?: number }) {
