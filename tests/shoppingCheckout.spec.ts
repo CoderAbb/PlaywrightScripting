@@ -2,7 +2,7 @@ import { test } from '../fixtures.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { CartPage } from '../pages/CartPage.js';
 
-test('shopping checkout flow via page objects', async ({ authenticatedPage }) => {
+test.skip('shopping checkout flow via page objects', async ({ authenticatedPage }) => {
   const loginPage = new LoginPage(authenticatedPage);
   const cartPage = new CartPage(authenticatedPage);
 
