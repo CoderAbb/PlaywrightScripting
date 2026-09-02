@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { RAHUL_SHETTY_URL } from '../global-setup.js';
+import { RAHUL_SHETTY_URL } from '../config/urls.js';
 
-test.skip('searchflights @flights', async ({ page }) => {
+test('searchflights @flights', async ({ page }) => {
   const SLOW_CLICK_TIMEOUT = 8000;
 
   async function fillifpresent(page: any, text: string, options?: { timeout?: number }) {
@@ -42,4 +42,7 @@ test.skip('searchflights @flights', async ({ page }) => {
   await iaf.check({ timeout: SLOW_CLICK_TIMEOUT });
 
   await page1.getByRole('button', { name: 'Search' }).click();
+
+  // Basic sanity assertion: results or related search text should appear
+  await expect(page1.locator('body')).toContainText(/search|flight|results|no results/i);
 });

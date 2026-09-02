@@ -45,18 +45,17 @@ PlaywrightScripting/
 │
 ├── pages/                        # Page Object Model classes
 │   ├── LoginPage.ts
-│   ├── ShopPage.ts
-│   ├── CartPage.ts
-│   ├── CheckoutPage.ts
 │   ├── ToolshopProductPage.ts
 │   ├── ToolshopCartPage.ts
 │   └── ToolshopCheckoutPage.ts
 │
 ├── tests/                        # Spec files (Playwright test runner)
-│   ├── shoppingCheckout.spec.ts
 │   ├── checkout.spec.ts
 │   ├── toolshopCartCheckout.spec.ts
 │   └── ...
+├── config/                       # Shared URL and test-data modules
+│   ├── urls.ts                   # Centralized site URLs used by tests
+│   └── testData.ts               # Centralized test data (emails, names, postal codes)
 │
 ├── scripts/
 │   └── auto-heal.mjs             # Self-healing agent: tsc scan -> Claude fix -> verify -> PR
@@ -119,8 +118,10 @@ npx playwright test --headed
 **Run a specific test file:**
 
 ```bash
-npx playwright test tests/shoppingCheckout.spec.ts
+npx playwright test tests/checkout.spec.ts
 ```
+
+Note: `tests/shoppingCheckout.spec.ts` and its page objects (`ShopPage.ts`, `CartPage.ts`, `CheckoutPage.ts`) were removed and replaced by the shared `config` modules; update any local references accordingly.
 
 **Run tests with UI Mode (Interactive runner):**
 

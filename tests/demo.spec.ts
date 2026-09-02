@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { PLAYWRIGHT_URL } from '../global-setup.js';
+import { PLAYWRIGHT_URL } from '../config/urls.js';
 
 test('hastitle @title', async ({ page }) => {
   await page.goto(PLAYWRIGHT_URL);

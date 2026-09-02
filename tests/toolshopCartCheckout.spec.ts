@@ -6,7 +6,7 @@ import {
   CHECKOUT_CITY,
   CHECKOUT_STATE,
   CHECKOUT_POST_CODE,
-} from '../global-setup.js';
+} from '../config/testData.js';
 import { ToolshopProductPage } from '../pages/ToolshopProductPage.js';
 import { ToolshopCartPage } from '../pages/ToolshopCartPage.js';
 import { ToolshopCheckoutPage } from '../pages/ToolshopCheckoutPage.js';

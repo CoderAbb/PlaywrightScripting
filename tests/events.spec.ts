@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { QA_BASE_URL } from '../global-setup.js';
+import { QA_BASE_URL } from '../config/urls.js';
 
 const clickLinkByName = async (page: Page, name: string) => {
     const normalizedName = name.replace(/^\/\s*/, '').trim();

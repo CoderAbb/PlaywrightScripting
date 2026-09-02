@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { RAHUL_SHETTY_URL } from '../global-setup.js';
+import { RAHUL_SHETTY_URL } from '../config/urls.js';
 
 async function addToCart(page: Page, productName: string) {
     const product = page.locator('.product').filter({ hasText: productName }).first();

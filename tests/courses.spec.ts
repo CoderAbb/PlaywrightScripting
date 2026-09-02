@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { QA_BASE_URL } from '../global-setup.js';
+import { QA_BASE_URL } from '../config/urls.js';
 
 async function openHome(page: Page) {
     await page.goto(QA_BASE_URL);

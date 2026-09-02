@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { SHOP_BASE_URL, TEST_EMAIL, CHECKOUT_KIDS_FIRST_NAME, CHECKOUT_KIDS_LAST_NAME, CHECKOUT_KIDS_PHONE, CHECKOUT_KIDS_ADDRESS, CHECKOUT_KIDS_CITY, CHECKOUT_KIDS_STATE, CHECKOUT_KIDS_POST_CODE } from '../global-setup.js';
+import { SHOP_BASE_URL } from '../config/urls.js';
+import { TEST_EMAIL, CHECKOUT_KIDS_FIRST_NAME, CHECKOUT_KIDS_LAST_NAME, CHECKOUT_KIDS_PHONE, CHECKOUT_KIDS_ADDRESS, CHECKOUT_KIDS_CITY, CHECKOUT_KIDS_STATE, CHECKOUT_KIDS_POST_CODE } from '../config/testData.js';
 
 test('kids shopping @Kidsshopping', async ({ page }) => {
   await page.goto(SHOP_BASE_URL);

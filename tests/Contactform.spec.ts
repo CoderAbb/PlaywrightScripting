@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { QA_BASE_URL, TEST_EMAIL } from '../global-setup.js';
+import { QA_BASE_URL } from '../config/urls.js';
+import { TEST_EMAIL } from '../config/testData.js';
 
 test('contact form submission @contacts', async ({ page }) => {
   await page.goto(`${QA_BASE_URL}/contacts/`);
