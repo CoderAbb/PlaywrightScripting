@@ -2,7 +2,12 @@ import { test, expect } from '@playwright/test';
 import { RAHUL_SHETTY_URL } from '../config/urls.js';
 
 test('searchflights @flights', async ({ page }) => {
-  const SLOW_CLICK_TIMEOUT = 8000;
+  // webkit specifically has needed more time than chromium/firefox for this
+  // older jQuery-heavy site under CI's resource constraints — same pattern
+  // already seen on the toolshop cart page. Bumped from 8s; chromium/firefox
+  // passing consistently at 8s while only webkit times out is the evidence
+  // this is a timing issue, not the calendar day itself being unavailable.
+  const SLOW_CLICK_TIMEOUT = 20000;
 
   async function fillifpresent(page: any, text: string, options?: { timeout?: number }) {
     try {
@@ -21,6 +26,10 @@ test('searchflights @flights', async ({ page }) => {
   const page1Promise = page.waitForEvent('popup');
   await page.getByRole('link', { name: 'Flight Booking' }).click();
   const page1 = await page1Promise;
+  // Let the popup's own resources (jQuery, the datepicker widget) settle
+  // before interacting with it, rather than only waiting on individual
+  // elements one at a time.
+  await page1.waitForLoadState('networkidle').catch(() => {});
   await page1.locator('#ctl00_mainContent_ddl_originStation1_CTXT').click();
   await page1.locator('#ctl00_mainContent_ddl_destinationStation1_CTXT').click();
 
