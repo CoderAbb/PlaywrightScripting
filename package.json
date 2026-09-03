@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "playwright test --workers=1 --timeout=120000",
+    "dashboard": "node ./scripts/generate-dashboard.mjs",
     "test:ui": "playwright test --headed --project=chromium --workers=1 --timeout=120000",
     "test:debug": "playwright test --debug --workers=1 --timeout=120000",
     "test:allure": "npx allure run -- npx playwright test --workers=1 --timeout=120000 --reporter=line,allure-playwright",
@@ -33,6 +34,7 @@
     "allure": "^3.16.0",
     "allure-playwright": "^3.9.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.23.13",
     "typescript": "^7.0.2"
   },
   "dependencies": {
