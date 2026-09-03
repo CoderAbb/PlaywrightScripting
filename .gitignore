@@ -32,3 +32,7 @@ node_modules/
 # consumer (dashboard, CI artifact upload) that needs it persisted in git.
 /reports/
 
+# Local diagnostic artifacts created during debugging — never commit
+.diagnostic-playwright.json
+.diagnostic-playwright.stderr
+
