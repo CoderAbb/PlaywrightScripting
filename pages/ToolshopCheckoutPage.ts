@@ -16,13 +16,7 @@ export type ToolshopPaymentMethod =
   | 'Buy Now Pay Later'
   | 'Gift Card';
 
-/**
- * Page object for steps 2-4 of the Toolshop checkout wizard on
- * https://practicesoftwaretesting.com/checkout:
- *   2. Sign in / Continue as Guest
- *   3. Billing Address
- *   4. Payment
- */
+
 export class ToolshopCheckoutPage {
   constructor(private page: Page) {}
 
@@ -36,19 +30,11 @@ export class ToolshopCheckoutPage {
     await this.page.locator('[data-test="proceed-2-guest"]').click();
   }
 
-  /**
-   * Fills the billing address form. NOTE: the app auto-fills street/city/state
-   * once postal code + house number are entered, overwriting anything already
-   * typed in those fields. This method fills postal code/house number first,
-   * waits for the auto-fill, then overwrites street/city/state with the
-   * requested values so the final state is deterministic.
-   */
   async fillBillingAddress(address: ToolshopBillingAddress) {
     await this.page.locator('[data-test="country"]').selectOption(address.country);
     await this.page.locator('[data-test="postal_code"]').fill(address.postalCode);
     await this.page.locator('[data-test="house_number"]').fill(address.houseNumber);
 
-    // Let the app's address auto-fill run, then overwrite with deterministic values.
     await expect(this.page.locator('[data-test="street"]')).not.toHaveValue('');
     await this.page.locator('[data-test="street"]').fill(address.street);
     await this.page.locator('[data-test="city"]').fill(address.city);
