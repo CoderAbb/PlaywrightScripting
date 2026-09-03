@@ -1,11 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { PRACTICE_SITE_URL } from '../global-setup.js';
 
-/**
- * Page object for the Practice Software Testing "Toolshop" product
- * catalog (https://practicesoftwaretesting.com). Handles browsing,
- * searching, and adding products to the cart.
- */
+
 export class ToolshopProductPage {
   constructor(private page: Page) {}
 
