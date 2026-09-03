@@ -9,7 +9,7 @@ async function addToCart(page: Page, productName: string) {
 }
 
 test('multiorder @multipleitems', async ({ page }) => {
-    await page.goto(RAHUL_SHETTY_URL);
+    await page.goto(RAHUL_SHETTY_URL, { waitUntil: 'domcontentloaded' });
 
     const items = ['Brocolli', 'Cauliflower', 'Cucumber', 'Beetroot', 'Beans', 'Tomato'];
     for (const item of items) {
@@ -23,6 +23,6 @@ test('multiorder @multipleitems', async ({ page }) => {
     await page.getByRole('checkbox').check();
     await page.getByRole('button', { name: 'Proceed' }).click();
 
-    await page.goto(RAHUL_SHETTY_URL);
+    await page.goto(RAHUL_SHETTY_URL, { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('banner')).toContainText('GREENKART');
 });

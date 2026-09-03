@@ -17,7 +17,7 @@ test('searchflights @flights', async ({ page }) => {
     }
   }
 
-  await page.goto(RAHUL_SHETTY_URL);
+  await page.goto(RAHUL_SHETTY_URL, { waitUntil: 'domcontentloaded' });
   const page1Promise = page.waitForEvent('popup');
   await page.getByRole('link', { name: 'Flight Booking' }).click();
   const page1 = await page1Promise;

@@ -30,8 +30,54 @@ export class ToolshopCheckoutPage {
     await this.page.locator('[data-test="proceed-2-guest"]').click();
   }
 
+  /**
+   * selectOption(plainString) matches against the <option>'s `value`
+   * attribute by default, not its visible text — country dropdowns almost
+   * always store a short code as the value, not the full country name, so
+   * a literal country name usually fails to match. This tries label match,
+   * then value match, then a normalized partial-text match against
+   * whatever options actually exist in the DOM right now. If none of those
+   * work, it fails with the real list of available options instead of an
+   * opaque timeout.
+   */
+  private async selectCountry(countryQuery: string) {
+    const select = this.page.locator('[data-test="country"]');
+    await expect(select).toBeVisible({ timeout: 10_000 });
+
+    for (const attempt of [
+      () => select.selectOption({ label: countryQuery }),
+      () => select.selectOption({ value: countryQuery }),
+      () => select.selectOption(countryQuery),
+    ]) {
+      try {
+        await attempt();
+        return;
+      } catch {
+        // try the next strategy
+      }
+    }
+
+    const options = await select.locator('option').all();
+    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
+    const normalizedQuery = normalize(countryQuery);
+
+    for (const option of options) {
+      const label = normalize((await option.textContent()) ?? '');
+      const value = (await option.getAttribute('value')) ?? '';
+      if (label && (label.includes(normalizedQuery) || normalizedQuery.includes(label))) {
+        await select.selectOption({ value });
+        return;
+      }
+    }
+
+    const available = (await Promise.all(options.map((o) => o.textContent()))).filter(Boolean);
+    throw new Error(
+      `Could not find a country option matching "${countryQuery}". Available options: ${available.join(', ')}`,
+    );
+  }
+
   async fillBillingAddress(address: ToolshopBillingAddress) {
-    await this.page.locator('[data-test="country"]').selectOption(address.country);
+    await this.selectCountry(address.country);
     await this.page.locator('[data-test="postal_code"]').fill(address.postalCode);
     await this.page.locator('[data-test="house_number"]').fill(address.houseNumber);
 
