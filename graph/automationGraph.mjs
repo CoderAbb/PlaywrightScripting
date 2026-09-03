@@ -10,17 +10,6 @@
  * job here is purely routing: decide which script needs to run, in what
  * order, based on what the last one found.
  *
- * generateInsights is the one node that actually calls an LLM through
- * LangChain (@langchain/anthropic's ChatAnthropic) — every other node just
- * shells out to existing scripts, which call Claude via raw fetch, not
- * LangChain. This node reads the accumulated run history
- * (reports/automation-metrics.json) and healing history
- * (reports/healing-history.json) and asks for actual analysis — trend
- * direction, flaky-test candidates, recurring failure patterns,
- * recommendations — instead of just raw counts. Best-effort: no API key or
- * no history yet both degrade gracefully to a SKIPPED status, same pattern
- * as the other nodes.
- *
  * Graph:
  *
  *   START
@@ -35,9 +24,6 @@
  *                       checkLocatorHealth  (npm run heal-locators)
  *                                |
  *                                v
- *                        generateInsights  (LangChain/ChatAnthropic — costs API calls)
- *                                |
- *                                v
  *                        generateReport
  *                                |
  *                                v
@@ -47,15 +33,12 @@
  *   npm run orchestrate                 # locator step attempted, PRs not opened
  *   npm run orchestrate -- --pr         # both healer scripts allowed to open PRs
  *   npm run orchestrate -- --skip-locators   # compile-only pass, skips the browser step entirely
- *   npm run orchestrate -- --skip-insights   # skip the LangChain insights call entirely
  *
  * Exit codes: 0 = everything clean or fully healed, 1 = something needs a
  * human, 2 = the orchestrator itself hit a config/environment error.
  */
 
 import { StateGraph, Annotation, START, END } from '@langchain/langgraph';
-import { ChatAnthropic } from '@langchain/anthropic';
-import { z } from 'zod';
 import { spawnSync } from 'node:child_process';
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -64,14 +47,10 @@ import process from 'node:process';
 const REPO_ROOT = process.cwd();
 const REPORTS_DIR = path.join(REPO_ROOT, 'reports');
 const LATEST_RUN_FILE = path.join(REPORTS_DIR, 'latest-run.json');
-const METRICS_FILE = path.join(REPORTS_DIR, 'automation-metrics.json');
-const HEALING_HISTORY_FILE = path.join(REPORTS_DIR, 'healing-history.json');
-const INSIGHTS_FILE = path.join(REPORTS_DIR, 'insights.json');
 
 const args = new Set(process.argv.slice(2));
 const OPEN_PR = args.has('--pr');
 const SKIP_LOCATORS = args.has('--skip-locators');
-const SKIP_INSIGHTS = args.has('--skip-insights');
 const DIAGRAM_ONLY = args.has('--diagram');
 
 function log(...msg) {
@@ -103,39 +82,6 @@ function readLatestRun() {
   }
 }
 
-function readJsonArraySafe(file) {
-  if (!existsSync(file)) return [];
-  try {
-    const parsed = JSON.parse(readFileSync(file, 'utf-8'));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Insights schema — the actual LangChain-driven output. Everything else this
-// graph produces is counts and statuses already available from the scripts
-// it wraps; this is the one place that turns accumulated history into
-// analysis a human wouldn't have to do by hand.
-// ---------------------------------------------------------------------------
-
-const InsightsSchema = z.object({
-  summary: z.string().describe('2-3 sentence plain-English summary of current automation health'),
-  trend: z
-    .enum(['improving', 'stable', 'degrading', 'insufficient_data'])
-    .describe('Overall trajectory across the recent run history'),
-  flakyTests: z
-    .array(z.string())
-    .describe('Test titles that appear to fail intermittently (pass in some runs, fail in others) — empty array if none detected'),
-  recurringFailurePatterns: z
-    .array(z.string())
-    .describe('Common themes across failures/healing events (e.g. "same locator breaking repeatedly", "checkout flow most fragile") — empty array if none detected'),
-  recommendations: z
-    .array(z.string())
-    .describe('Concrete, actionable next steps for the team — empty array if nothing stands out'),
-});
-
 // ---------------------------------------------------------------------------
 // Graph state
 // ---------------------------------------------------------------------------
@@ -156,10 +102,6 @@ const GraphState = Annotation.Root({
   locatorDetail: Annotation({
     reducer: (_prev, next) => next,
     default: () => '',
-  }),
-  insights: Annotation({
-    reducer: (_prev, next) => next,
-    default: () => null,
   }),
   log: Annotation({
     reducer: (prev, next) => [...prev, ...next],
@@ -247,83 +189,12 @@ async function checkLocatorHealth() {
   };
 }
 
-async function generateInsights() {
-  log('Node: generateInsights');
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return {
-      insights: null,
-      log: ['generateInsights: skipped, no API key'],
-    };
-  }
-
-  const runHistory = readJsonArraySafe(METRICS_FILE);
-  const healingHistory = readJsonArraySafe(HEALING_HISTORY_FILE);
-
-  if (runHistory.length < 2) {
-    // Not enough history yet to say anything meaningful about a trend —
-    // one data point isn't a trend, it's just today. Skip rather than
-    // have the LLM invent a narrative from nothing.
-    return {
-      insights: null,
-      log: [`generateInsights: skipped, only ${runHistory.length} run(s) of history so far (need at least 2)`],
-    };
-  }
-
-  // Keep the prompt bounded regardless of how long the history has grown.
-  const recentRuns = runHistory.slice(-30);
-  const recentHealing = healingHistory.slice(-100);
-
-  const runSummaryLines = recentRuns.map((r) => {
-    const failCount = r.failures?.length ?? 0;
-    return `- ${r.execution?.startTime ?? 'unknown time'} [${r.source}] status=${r.status} tests=${JSON.stringify(r.tests)} healing=${JSON.stringify(r.healing)} failures=${failCount}`;
-  });
-  const healingLines = recentHealing.map(
-    (h) => `- ${h.timestamp} [${h.source}] ${h.file}${h.line ? `:${h.line}` : ''} successful=${h.successful}${h.reason ? ` reason="${h.reason}"` : ''}`,
-  );
-  const failureTitles = recentRuns.flatMap((r) => (r.failures ?? []).map((f) => f.title));
-
-  try {
-    const model = new ChatAnthropic({ model: 'claude-sonnet-4-6', temperature: 0 });
-    const structuredModel = model.withStructuredOutput(InsightsSchema, { name: 'automation_insights' });
-
-    const prompt = [
-      'You are analyzing test automation run history for a Playwright test suite.',
-      `Here are the last ${recentRuns.length} run(s), most recent last:`,
-      ...runSummaryLines,
-      '',
-      `Here are the last ${recentHealing.length} healing attempt(s):`,
-      ...healingLines,
-      '',
-      `All failure titles seen across this history: ${JSON.stringify(failureTitles)}`,
-      '',
-      'Analyze this data. A test title appearing as a failure in some runs but',
-      'not others (not simply "always fails") is a flaky-test candidate.',
-    ].join('\n');
-
-    const result = await structuredModel.invoke(prompt);
-    mkdirSync(REPORTS_DIR, { recursive: true });
-    const withTimestamp = { generatedAt: new Date().toISOString(), ...result };
-    writeFileSync(INSIGHTS_FILE, JSON.stringify(withTimestamp, null, 2));
-
-    return {
-      insights: withTimestamp,
-      log: [`generateInsights: trend=${result.trend}, ${result.flakyTests.length} flaky test(s) flagged`],
-    };
-  } catch (err) {
-    return {
-      insights: null,
-      log: [`generateInsights: LLM call failed: ${err.message}`],
-    };
-  }
-}
-
 async function generateReport(state) {
   log('Node: generateReport');
   const report = {
     generatedAt: new Date().toISOString(),
     compile: { status: state.compileStatus, detail: state.compileDetail },
     locators: { status: state.locatorStatus, detail: state.locatorDetail },
-    insights: state.insights,
     log: state.log,
   };
   mkdirSync(REPORTS_DIR, { recursive: true });
@@ -343,7 +214,6 @@ const graph = new StateGraph(GraphState)
   .addNode('checkCompileHealth', checkCompileHealth)
   .addNode('healCompileErrors', healCompileErrors)
   .addNode('checkLocatorHealth', checkLocatorHealth)
-  .addNode('generateInsights', generateInsights)
   .addNode('generateReport', generateReport)
   .addEdge(START, 'checkCompileHealth')
   .addConditionalEdges('checkCompileHealth', routeAfterCompileCheck, [
@@ -351,8 +221,7 @@ const graph = new StateGraph(GraphState)
     'checkLocatorHealth',
   ])
   .addEdge('healCompileErrors', 'checkLocatorHealth')
-  .addEdge('checkLocatorHealth', SKIP_INSIGHTS ? 'generateReport' : 'generateInsights')
-  .addEdge('generateInsights', 'generateReport')
+  .addEdge('checkLocatorHealth', 'generateReport')
   .addEdge('generateReport', END)
   .compile();
 

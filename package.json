@@ -22,24 +22,20 @@
     "report:agent-inspect": "npx allure agent inspect allure-results",
     "orchestrate": "node ./graph/automationGraph.mjs",
     "orchestrate:pr": "node ./graph/automationGraph.mjs --pr",
-    "orchestrate:diagram": "node ./graph/automationGraph.mjs --diagram",
-    "dashboard": "node ./scripts/generate-dashboard.mjs"
+    "orchestrate:diagram": "node ./graph/automationGraph.mjs --diagram"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    
     "@playwright/test": "^1.57.0",
     "@types/node": "^24.13.3",
     "allure": "^3.16.0",
     "allure-playwright": "^3.9.0",
     "ts-node": "^10.9.2",
-    "typescript": "^7.0.2",
-    "zod": "^4.5.4"
+    "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@langchain/anthropic": "^1.5.8",
     "@langchain/core": "^1.2.9",
     "@langchain/langgraph": "^1.4.13"
   }
