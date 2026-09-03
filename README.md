@@ -73,6 +73,7 @@ PlaywrightScripting/
 ```
 <img width="1426" height="797" alt="Screenshot 2026-08-30 at 4 54 50 PM" src="https://github.com/user-attachments/assets/16c57a2a-cea9-437f-afd0-babef7b3d593" />
 
+<img width="1370" height="691" alt="Screenshot 2026-09-03 at 12 13 18 PM" src="https://github.com/user-attachments/assets/5ea8ec40-f1b2-4891-8b9a-10579adab49e" />
 
 ## 🛠️ Getting Started
 
