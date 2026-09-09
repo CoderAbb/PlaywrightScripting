@@ -36,10 +36,6 @@ test('searchflights @flights', async ({ page }) => {
   await fillifpresent(page1, 'Chennai (MAA)', { timeout: SLOW_CLICK_TIMEOUT });
   await fillifpresent(page1, 'Bengaluru (BLR)', { timeout: SLOW_CLICK_TIMEOUT });
 
-  const first12 = page1.getByRole('link', { name: '12' }).first();
-  await first12.waitFor({ state: 'visible', timeout: SLOW_CLICK_TIMEOUT });
-  await first12.click({ timeout: SLOW_CLICK_TIMEOUT });
-
   await page1.getByRole('button').nth(1).click();
 
   const first19 = page1.getByRole('link', { name: '19' }).first();
