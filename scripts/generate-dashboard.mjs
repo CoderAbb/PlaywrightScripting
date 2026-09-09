@@ -87,6 +87,64 @@ const weekTopFailures = Object.entries(weekFailureCounts)
   .slice(0, 5);
 const weekHealing = healingHistory.filter((h) => new Date(h.timestamp) >= sevenDaysAgo);
 
+// --- All-time failure ranking (as opposed to the week-scoped one above) ---
+const allTimeFailureTitles = runHistory.flatMap((r) => (r.failures ?? []).map((f) => f.title));
+const allTimeFailureCounts = {};
+for (const title of allTimeFailureTitles) {
+  allTimeFailureCounts[title] = (allTimeFailureCounts[title] ?? 0) + 1;
+}
+const allTimeTopFailures = Object.entries(allTimeFailureCounts)
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 10);
+
+// --- Failure classification breakdown across full history ---
+const classificationCounts = {};
+for (const r of runHistory) {
+  for (const f of r.failures ?? []) {
+    const c = f.classification ?? 'other';
+    classificationCounts[c] = (classificationCounts[c] ?? 0) + 1;
+  }
+}
+const classificationBreakdown = Object.entries(classificationCounts).sort((a, b) => b[1] - a[1]);
+
+// --- Browser breakdown, parsed from "chromium > test name" style titles ---
+// (only heal-locators tags titles this way; auto-heal's compile-error titles
+// are plain file paths with no ' > ' separator, so those are naturally
+// excluded here rather than miscounted.)
+const browserCounts = {};
+for (const r of runHistory) {
+  for (const f of r.failures ?? []) {
+    const match = /^(chromium|firefox|webkit)\s*>/i.exec(f.title ?? '');
+    if (match) {
+      const browser = match[1].toLowerCase();
+      browserCounts[browser] = (browserCounts[browser] ?? 0) + 1;
+    }
+  }
+}
+const browserBreakdown = Object.entries(browserCounts).sort((a, b) => b[1] - a[1]);
+
+// --- Per-source breakdown (auto-heal vs heal-locators vs anything else) ---
+const sourceStats = {};
+for (const r of runHistory) {
+  const src = r.source ?? 'unknown';
+  if (!sourceStats[src]) sourceStats[src] = { total: 0, passed: 0 };
+  sourceStats[src].total += 1;
+  if (r.status === 'PASSED') sourceStats[src].passed += 1;
+}
+
+// --- Run duration stats across history ---
+const durations = runHistory.map((r) => r.execution?.durationMs).filter((d) => typeof d === 'number' && d >= 0);
+const avgDurationMs = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : null;
+const maxDurationMs = durations.length ? Math.max(...durations) : null;
+
+function formatDuration(ms) {
+  if (ms === null || ms === undefined) return '—';
+  const totalSeconds = Math.round(ms / 1000);
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
 // ---------------------------------------------------------------------------
 // Render: run-timeline waveform (inline SVG, no chart library)
 // ---------------------------------------------------------------------------
@@ -184,6 +242,82 @@ function renderWeekTopFailures() {
   </ul>`;
 }
 
+function renderAllTimeTopFailures() {
+  if (allTimeTopFailures.length === 0) {
+    return `<p class="empty">No failures recorded yet.</p>`;
+  }
+  return `<ul class="rank-list">
+    ${allTimeTopFailures.map(([title, count]) => `<li><span class="mono">${count}×</span> ${escapeHtml(title)}</li>`).join('')}
+  </ul>`;
+}
+
+function renderBarBreakdown(entries, colorMap = {}) {
+  if (entries.length === 0) {
+    return `<p class="empty">No data yet.</p>`;
+  }
+  const max = Math.max(...entries.map(([, count]) => count));
+  return `<div class="bar-breakdown">
+    ${entries
+      .map(([label, count]) => {
+        const pct = max > 0 ? Math.round((count / max) * 100) : 0;
+        const color = colorMap[label] ?? 'var(--pass)';
+        return `<div class="bar-row">
+          <span class="bar-label mono">${escapeHtml(label)}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+          <span class="bar-count mono">${count}</span>
+        </div>`;
+      })
+      .join('')}
+  </div>`;
+}
+
+function renderSourceBreakdown() {
+  const entries = Object.entries(sourceStats);
+  if (entries.length === 0) {
+    return `<p class="empty">No runs recorded yet.</p>`;
+  }
+  return `<table>
+    <thead><tr><th>Source</th><th>Runs</th><th>Pass rate</th></tr></thead>
+    <tbody>
+      ${entries
+        .map(
+          ([src, s]) => `<tr>
+            <td class="mono">${escapeHtml(src)}</td>
+            <td>${s.total}</td>
+            <td>${Math.round((s.passed / s.total) * 100)}%</td>
+          </tr>`,
+        )
+        .join('')}
+    </tbody>
+  </table>`;
+}
+
+function renderRecentRunsTable(runs) {
+  if (runs.length === 0) {
+    return `<p class="empty">No runs recorded yet.</p>`;
+  }
+  const rows = runs
+    .slice(-20)
+    .reverse()
+    .map((r) => {
+      const t = r.tests ?? {};
+      const failCount = r.failures?.length ?? 0;
+      return `<tr>
+        <td class="mono">${escapeHtml(r.execution?.startTime?.slice(0, 16).replace('T', ' ') ?? '')}</td>
+        <td>${escapeHtml(r.source ?? '')}</td>
+        <td><span class="pill" style="--pill-color:${colorFor(r.status)}">${escapeHtml(r.status)}</span></td>
+        <td class="mono">${t.passed ?? '—'}/${t.total ?? '—'}</td>
+        <td class="mono">${failCount}</td>
+        <td class="mono">${formatDuration(r.execution?.durationMs)}</td>
+      </tr>`;
+    })
+    .join('\n');
+  return `<table>
+    <thead><tr><th>When</th><th>Source</th><th>Status</th><th>Tests</th><th>Failures</th><th>Duration</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
 // ---------------------------------------------------------------------------
 // Full page
 // ---------------------------------------------------------------------------
@@ -261,6 +395,12 @@ const html = `<!DOCTYPE html>
   .rank-list li { padding: 0.3rem 0; border-bottom: 1px solid var(--border); }
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
   @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+  .bar-breakdown { display: flex; flex-direction: column; gap: 0.6rem; }
+  .bar-row { display: grid; grid-template-columns: 90px 1fr 32px; align-items: center; gap: 0.6rem; font-size: 0.8rem; }
+  .bar-label { color: var(--muted); text-transform: lowercase; }
+  .bar-track { background: var(--base); border-radius: 3px; height: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; }
+  .bar-count { text-align: right; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -289,6 +429,7 @@ const html = `<!DOCTYPE html>
       ${renderStat('Pass rate', passRate !== null ? `${passRate}%` : null, `${passedRuns} of ${totalRuns} runs`)}
       ${renderStat('Healing success rate', healSuccessRate !== null ? `${healSuccessRate}%` : null, `${totalHealSuccess} of ${totalHealAttempts} attempts`)}
       ${renderStat('Latest status', latestRun ? escapeHtml(latestRun.status) : null, latestRun?.source)}
+      ${renderStat('Avg. run duration', formatDuration(avgDurationMs), maxDurationMs !== null ? `longest: ${formatDuration(maxDurationMs)}` : undefined)}
     </div>
   </section>
 
@@ -296,6 +437,43 @@ const html = `<!DOCTYPE html>
     <h2>AI insights</h2>
     <div class="panel">
       ${renderInsights()}
+    </div>
+  </section>
+
+  <section>
+    <h2>Recent runs</h2>
+    <div class="panel">
+      ${renderRecentRunsTable(runHistory)}
+    </div>
+  </section>
+
+  <section>
+    <h2>Failure breakdown</h2>
+    <div class="two-col">
+      <div class="panel">
+        <h3>By category</h3>
+        ${renderBarBreakdown(classificationBreakdown, {
+          locator: 'var(--review)',
+          timeout: 'var(--healed)',
+          typescript: 'var(--pass)',
+          'js-syntax': 'var(--pass)',
+          assertion: 'var(--review)',
+          environment: 'var(--healed)',
+          other: 'var(--muted)',
+        })}
+        ${browserBreakdown.length ? `<h3 style="margin-top:1.5rem">By browser</h3>${renderBarBreakdown(browserBreakdown)}` : ''}
+      </div>
+      <div class="panel">
+        <h3>Most frequent failures, all time</h3>
+        ${renderAllTimeTopFailures()}
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>By source</h2>
+    <div class="panel">
+      ${renderSourceBreakdown()}
     </div>
   </section>
 
