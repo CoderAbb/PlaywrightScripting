@@ -23,6 +23,10 @@
     "report:agent-inspect": "npx allure agent inspect allure-results",
     "orchestrate": "node ./graph/automationGraph.mjs",
     "orchestrate:pr": "node ./graph/automationGraph.mjs --pr",
+    "analyze": "node ./scripts/analyze-results.mjs",
+    "flaky": "node ./scripts/detect-flaky-tests.mjs",
+    "intelligence": "npm run analyze && npm run dashboard",
+    "test:intelligence": "npm test && npm run analyze && npm run intelligence",
     "orchestrate:diagram": "node ./graph/automationGraph.mjs --diagram"
   },
   "keywords": [],

@@ -26,7 +26,16 @@ export default defineConfig({
   /* Keep local runs stable while allowing CI to scale up if needed. */
   workers: process.env.CI ? 1 : 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [['line'], ['allure-playwright']],
+reporter: [
+  ["list"],
+  [
+    "json",
+    {
+      outputFile: "test-results/results.json"
+    }
+  ],
+  ["allure-playwright"]
+],
   timeout: 120_000,
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {

@@ -1,559 +1,849 @@
-#!/usr/bin/env node
-/**
- * generate-dashboard.mjs
- *
- * Reads everything scripts/lib/automation-state.mjs and graph/automationGraph.mjs
- * have written to reports/*.json and renders one self-contained HTML file —
- * no CDN dependencies, no build step, opens directly in a browser offline.
- *
- * Usage:
- *   npm run dashboard
- *   open reports/dashboard.html
- */
+import fs from "node:fs";
+import path from "node:path";
 
-import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
-import process from 'node:process';
+const REPORT_DIR = path.resolve("reports");
+const INTELLIGENCE_FILE = path.join(REPORT_DIR, "intelligence.json");
+const OUTPUT_FILE = path.join(REPORT_DIR, "dashboard.html");
 
-const REPO_ROOT = process.cwd();
-const REPORTS_DIR = path.join(REPO_ROOT, 'reports');
-const OUT_FILE = path.join(REPORTS_DIR, 'dashboard.html');
-
-function readJsonSafe(file, fallback) {
-  if (!existsSync(file)) return fallback;
-  try {
-    return JSON.parse(readFileSync(file, 'utf-8'));
-  } catch {
-    return fallback;
-  }
+if (!fs.existsSync(REPORT_DIR)) {
+  fs.mkdirSync(REPORT_DIR, { recursive: true });
 }
 
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-// ---------------------------------------------------------------------------
-// Load data
-// ---------------------------------------------------------------------------
-
-const runHistory = readJsonSafe(path.join(REPORTS_DIR, 'automation-metrics.json'), []);
-const healingHistory = readJsonSafe(path.join(REPORTS_DIR, 'healing-history.json'), []);
-const insights = readJsonSafe(path.join(REPORTS_DIR, 'insights.json'), null);
-const latestRun = readJsonSafe(path.join(REPORTS_DIR, 'latest-run.json'), null);
-
-const STATUS_COLOR = {
-  PASSED: '#5EEAD4',
-  HEALED: '#F5A962',
-  HUMAN_REVIEW: '#F0677D',
-  FAILED: '#F0677D',
-  HEALING: '#F5A962',
-  RUNNING: '#8890A0',
+let intelligence = {
+  generatedAt: new Date().toISOString(),
+  summary: {
+    total: 0,
+    passed: 0,
+    failed: 0,
+    skipped: 0,
+    flakyCandidates: 0,
+    passRate: 0
+  },
+  failures: [],
+  flakyCandidates: [],
+  tests: []
 };
 
-function colorFor(status) {
-  return STATUS_COLOR[status] ?? '#8890A0';
-}
-
-// ---------------------------------------------------------------------------
-// Computed metrics
-// ---------------------------------------------------------------------------
-
-const totalRuns = runHistory.length;
-const passedRuns = runHistory.filter((r) => r.status === 'PASSED').length;
-const passRate = totalRuns > 0 ? Math.round((passedRuns / totalRuns) * 100) : null;
-
-const totalHealAttempts = runHistory.reduce((sum, r) => sum + (r.healing?.attempted ?? 0), 0);
-const totalHealSuccess = runHistory.reduce((sum, r) => sum + (r.healing?.successful ?? 0), 0);
-const healSuccessRate = totalHealAttempts > 0 ? Math.round((totalHealSuccess / totalHealAttempts) * 100) : null;
-
-const now = new Date();
-const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-const weekRuns = runHistory.filter((r) => {
-  const t = r.execution?.startTime;
-  return t && new Date(t) >= sevenDaysAgo;
-});
-const weekPassed = weekRuns.filter((r) => r.status === 'PASSED').length;
-const weekFailureTitles = weekRuns.flatMap((r) => (r.failures ?? []).map((f) => f.title));
-const weekFailureCounts = {};
-for (const title of weekFailureTitles) {
-  weekFailureCounts[title] = (weekFailureCounts[title] ?? 0) + 1;
-}
-const weekTopFailures = Object.entries(weekFailureCounts)
-  .sort((a, b) => b[1] - a[1])
-  .slice(0, 5);
-const weekHealing = healingHistory.filter((h) => new Date(h.timestamp) >= sevenDaysAgo);
-
-// --- All-time failure ranking (as opposed to the week-scoped one above) ---
-const allTimeFailureTitles = runHistory.flatMap((r) => (r.failures ?? []).map((f) => f.title));
-const allTimeFailureCounts = {};
-for (const title of allTimeFailureTitles) {
-  allTimeFailureCounts[title] = (allTimeFailureCounts[title] ?? 0) + 1;
-}
-const allTimeTopFailures = Object.entries(allTimeFailureCounts)
-  .sort((a, b) => b[1] - a[1])
-  .slice(0, 10);
-
-// --- Failure classification breakdown across full history ---
-const classificationCounts = {};
-for (const r of runHistory) {
-  for (const f of r.failures ?? []) {
-    const c = f.classification ?? 'other';
-    classificationCounts[c] = (classificationCounts[c] ?? 0) + 1;
+if (fs.existsSync(INTELLIGENCE_FILE)) {
+  try {
+    intelligence = JSON.parse(
+      fs.readFileSync(INTELLIGENCE_FILE, "utf8")
+    );
+  } catch (error) {
+    console.error(
+      "Unable to parse intelligence.json:",
+      error.message
+    );
   }
 }
-const classificationBreakdown = Object.entries(classificationCounts).sort((a, b) => b[1] - a[1]);
 
-// --- Browser breakdown, parsed from "chromium > test name" style titles ---
-// (only heal-locators tags titles this way; auto-heal's compile-error titles
-// are plain file paths with no ' > ' separator, so those are naturally
-// excluded here rather than miscounted.)
-const browserCounts = {};
-for (const r of runHistory) {
-  for (const f of r.failures ?? []) {
-    const match = /^(chromium|firefox|webkit)\s*>/i.exec(f.title ?? '');
-    if (match) {
-      const browser = match[1].toLowerCase();
-      browserCounts[browser] = (browserCounts[browser] ?? 0) + 1;
+const summary = intelligence.summary || {};
+const failures = intelligence.failures || [];
+const flaky = intelligence.flakyCandidates || [];
+const tests = intelligence.tests || [];
+
+const escapeHtml = value =>
+  String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+const statusClass = status => {
+  if (status === "passed") return "passed";
+  if (status === "failed") return "failed";
+  if (status === "skipped") return "skipped";
+  return "unknown";
+};
+
+const failureRows =
+  failures.length > 0
+    ? failures
+        .map(
+          failure => `
+        <tr>
+          <td>
+            <strong>${escapeHtml(failure.test)}</strong>
+            <div class="muted">
+              ${escapeHtml(failure.file)}
+            </div>
+          </td>
+
+          <td>
+            <span class="badge failure">
+              ${escapeHtml(failure.category)}
+            </span>
+          </td>
+
+          <td>
+            <strong>
+              ${Math.round((failure.confidence || 0) * 100)}%
+            </strong>
+          </td>
+
+          <td>
+            ${escapeHtml(
+              failure.diagnosis ||
+                failure.error ||
+                "No diagnosis available"
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              failure.recommendation ||
+                "Manual investigation required"
+            )}
+          </td>
+        </tr>
+      `
+        )
+        .join("")
+    : `
+      <tr>
+        <td colspan="5" class="empty">
+          No failures detected 🎉
+        </td>
+      </tr>
+    `;
+
+const flakyRows =
+  flaky.length > 0
+    ? flaky
+        .map(
+          test => `
+        <tr>
+          <td>
+            <strong>${escapeHtml(test.title)}</strong>
+            <div class="muted">
+              ${escapeHtml(test.file)}
+            </div>
+          </td>
+
+          <td>
+            ${escapeHtml(test.retryCount ?? 0)}
+          </td>
+
+          <td>
+            ${escapeHtml(test.status)}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              test.duration
+                ? `${Math.round(test.duration)} ms`
+                : "-"
+            )}
+          </td>
+
+          <td>
+            <span class="badge warning">
+              INVESTIGATE
+            </span>
+          </td>
+        </tr>
+      `
+        )
+        .join("")
+    : `
+      <tr>
+        <td colspan="5" class="empty">
+          No flaky candidates detected.
+        </td>
+      </tr>
+    `;
+
+const testRows =
+  tests.length > 0
+    ? tests
+        .map(
+          test => `
+        <tr>
+          <td>${escapeHtml(test.title)}</td>
+
+          <td>
+            <span class="status ${statusClass(test.status)}">
+              ${escapeHtml(test.status)}
+            </span>
+          </td>
+
+          <td>
+            ${escapeHtml(
+              test.failureCategory || "-"
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(test.retryCount ?? 0)}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              test.duration
+                ? `${Math.round(test.duration)} ms`
+                : "-"
+            )}
+          </td>
+        </tr>
+      `
+        )
+        .join("")
+    : `
+      <tr>
+        <td colspan="5" class="empty">
+          No test data available.
+        </td>
+      </tr>
+    `;
+
+const categoryCounts = {};
+
+for (const failure of failures) {
+  const category = failure.category || "UNKNOWN";
+
+  categoryCounts[category] =
+    (categoryCounts[category] || 0) + 1;
+}
+
+const categoryLabels = JSON.stringify(
+  Object.keys(categoryCounts)
+);
+
+const categoryValues = JSON.stringify(
+  Object.values(categoryCounts)
+);
+
+const generatedTime = new Date(
+  intelligence.generatedAt || Date.now()
+).toLocaleString();
+
+const html = `
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+/>
+
+<title>
+  AI Test Intelligence Dashboard
+</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  background:
+    linear-gradient(
+      135deg,
+      #07111f,
+      #0b1728 50%,
+      #101827
+    );
+
+  color: #e6edf7;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1500px;
+  margin: auto;
+  padding: 32px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.subtitle {
+  color: #8fa2b8;
+  margin-top: 8px;
+}
+
+.timestamp {
+  color: #7f93aa;
+  font-size: 13px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.card {
+  background:
+    rgba(17, 29, 48, 0.82);
+
+  border:
+    1px solid rgba(255,255,255,0.08);
+
+  border-radius: 16px;
+  padding: 22px;
+
+  box-shadow:
+    0 12px 40px rgba(0,0,0,0.25);
+}
+
+.metric-label {
+  color: #91a4ba;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.metric {
+  font-size: 34px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.metric-small {
+  color: #7f93aa;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.section {
+  margin-top: 24px;
+}
+
+.section-title {
+  font-size: 20px;
+  margin-bottom: 14px;
+}
+
+.dashboard-grid {
+  display: grid;
+
+  grid-template-columns:
+    1.3fr .7fr;
+
+  gap: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  color: #91a4ba;
+  font-size: 12px;
+  text-transform: uppercase;
+  padding: 12px;
+  border-bottom:
+    1px solid rgba(255,255,255,.08);
+}
+
+td {
+  padding: 14px 12px;
+  border-bottom:
+    1px solid rgba(255,255,255,.06);
+
+  vertical-align: top;
+}
+
+.muted {
+  color: #71869d;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.badge,
+.status {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.badge.failure {
+  background: rgba(239,68,68,.15);
+  color: #ff8f8f;
+}
+
+.badge.warning {
+  background: rgba(245,158,11,.15);
+  color: #ffc45c;
+}
+
+.status.passed {
+  background: rgba(34,197,94,.15);
+  color: #71e39a;
+}
+
+.status.failed {
+  background: rgba(239,68,68,.15);
+  color: #ff8f8f;
+}
+
+.status.skipped {
+  background: rgba(148,163,184,.15);
+  color: #aebaca;
+}
+
+.status.unknown {
+  background: rgba(148,163,184,.15);
+  color: #aebaca;
+}
+
+.empty {
+  text-align: center;
+  color: #71869d;
+  padding: 35px;
+}
+
+.chart-container {
+  height: 280px;
+}
+
+.progress {
+  height: 8px;
+  background: #1b293d;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+
+.progress-bar {
+  height: 100%;
+  width: ${summary.passRate || 0}%;
+  background: #35d07f;
+}
+
+.insight {
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.035);
+  margin-bottom: 12px;
+}
+
+.insight-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.insight-text {
+  color: #9aacc0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media(max-width: 1000px) {
+
+  .grid {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media(max-width: 600px) {
+
+  .container {
+    padding: 18px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+  }
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<header class="header">
+
+<div>
+
+<h1>
+AI Test Intelligence
+</h1>
+
+<div class="subtitle">
+Playwright + LangGraph + AI-powered test analysis
+</div>
+
+</div>
+
+<div class="timestamp">
+Last analysis:
+${escapeHtml(generatedTime)}
+</div>
+
+</header>
+
+
+<!-- METRICS -->
+
+<section class="grid">
+
+<div class="card">
+
+<div class="metric-label">
+Total Tests
+</div>
+
+<div class="metric">
+${summary.total || 0}
+</div>
+
+<div class="metric-small">
+Executed in latest run
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="metric-label">
+Pass Rate
+</div>
+
+<div class="metric">
+${summary.passRate || 0}%
+</div>
+
+<div class="progress">
+<div class="progress-bar"></div>
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="metric-label">
+Failures
+</div>
+
+<div class="metric">
+${summary.failed || 0}
+</div>
+
+<div class="metric-small">
+AI investigation candidates
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="metric-label">
+Flaky Candidates
+</div>
+
+<div class="metric">
+${summary.flakyCandidates || 0}
+</div>
+
+<div class="metric-small">
+Require stability analysis
+</div>
+
+</div>
+
+</section>
+
+
+<!-- ANALYTICS -->
+
+<section class="dashboard-grid">
+
+<div class="card">
+
+<div class="section-title">
+Failure Intelligence
+</div>
+
+<div class="chart-container">
+<canvas id="failureChart"></canvas>
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="section-title">
+AI Insights
+</div>
+
+<div class="insight">
+
+<div class="insight-title">
+Failure Analysis
+</div>
+
+<div class="insight-text">
+${failures.length}
+failure(s) were classified by the
+intelligence pipeline.
+</div>
+
+</div>
+
+
+<div class="insight">
+
+<div class="insight-title">
+Flakiness
+</div>
+
+<div class="insight-text">
+${flaky.length}
+test(s) show retry or instability
+signals and should be investigated.
+</div>
+
+</div>
+
+
+<div class="insight">
+
+<div class="insight-title">
+Automation Health
+</div>
+
+<div class="insight-text">
+Current pass rate:
+<strong>
+${summary.passRate || 0}%
+</strong>
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- RCA -->
+
+<section class="section">
+
+<div class="card">
+
+<div class="section-title">
+AI Failure RCA
+</div>
+
+<div style="overflow-x:auto">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Test</th>
+<th>Category</th>
+<th>Confidence</th>
+<th>Diagnosis</th>
+<th>Recommendation</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+${failureRows}
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- FLAKY -->
+
+<section class="section">
+
+<div class="card">
+
+<div class="section-title">
+Flaky Test Candidates
+</div>
+
+<div style="overflow-x:auto">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Test</th>
+<th>Retries</th>
+<th>Status</th>
+<th>Duration</th>
+<th>Action</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+${flakyRows}
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- TEST INVENTORY -->
+
+<section class="section">
+
+<div class="card">
+
+<div class="section-title">
+Test Execution Inventory
+</div>
+
+<div style="overflow-x:auto">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Test</th>
+<th>Status</th>
+<th>Failure Type</th>
+<th>Retries</th>
+<th>Duration</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+${testRows}
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</section>
+
+</div>
+
+
+<script>
+
+const categoryLabels =
+${categoryLabels};
+
+const categoryValues =
+${categoryValues};
+
+new Chart(
+  document.getElementById("failureChart"),
+  {
+    type: "doughnut",
+
+    data: {
+      labels: categoryLabels,
+
+      datasets: [{
+        data: categoryValues
+      }]
+    },
+
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            color: "#aebaca"
+          }
+        }
+      }
     }
   }
-}
-const browserBreakdown = Object.entries(browserCounts).sort((a, b) => b[1] - a[1]);
+);
 
-// --- Per-source breakdown (auto-heal vs heal-locators vs anything else) ---
-const sourceStats = {};
-for (const r of runHistory) {
-  const src = r.source ?? 'unknown';
-  if (!sourceStats[src]) sourceStats[src] = { total: 0, passed: 0 };
-  sourceStats[src].total += 1;
-  if (r.status === 'PASSED') sourceStats[src].passed += 1;
-}
+</script>
 
-// --- Run duration stats across history ---
-const durations = runHistory.map((r) => r.execution?.durationMs).filter((d) => typeof d === 'number' && d >= 0);
-const avgDurationMs = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : null;
-const maxDurationMs = durations.length ? Math.max(...durations) : null;
-
-function formatDuration(ms) {
-  if (ms === null || ms === undefined) return '—';
-  const totalSeconds = Math.round(ms / 1000);
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return m > 0 ? `${m}m ${s}s` : `${s}s`;
-}
-
-// ---------------------------------------------------------------------------
-// Render: run-timeline waveform (inline SVG, no chart library)
-// ---------------------------------------------------------------------------
-
-function renderWaveform(runs) {
-  if (runs.length === 0) {
-    return `<p class="empty">No runs recorded yet. Run <code>npm run heal:detect</code>, <code>npm run heal-locators</code>, or <code>npm run orchestrate</code> to start building history.</p>`;
-  }
-  const shown = runs.slice(-40);
-  const barWidth = 14;
-  const gap = 4;
-  const height = 90;
-  const width = shown.length * (barWidth + gap);
-
-  const bars = shown
-    .map((r, i) => {
-      const x = i * (barWidth + gap);
-      const failCount = r.failures?.length ?? 0;
-      const total = r.tests?.total || 1;
-      const failRatio = Math.min(failCount / total, 1);
-      const barHeight = Math.max(10, height * (failCount === 0 ? 0.25 : 0.25 + failRatio * 0.75));
-      const y = height - barHeight;
-      const color = colorFor(r.status);
-      const title = escapeHtml(
-        `${r.execution?.startTime?.slice(0, 10) ?? '?'} · ${r.source} · ${r.status} · ${failCount} failure(s)`,
-      );
-      return `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="2" fill="${color}" opacity="0.9"><title>${title}</title></rect>`;
-    })
-    .join('\n    ');
-
-  return `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" preserveAspectRatio="xMinYMax meet" role="img" aria-label="Run history, most recent ${shown.length} runs">
-    <line x1="0" y1="${height - 1}" x2="${width}" y2="${height - 1}" stroke="#2A2F3A" stroke-width="1" />
-    ${bars}
-  </svg>`;
-}
-
-// ---------------------------------------------------------------------------
-// Render: sections
-// ---------------------------------------------------------------------------
-
-function renderStat(label, value, sub) {
-  return `<div class="stat">
-    <div class="stat-value">${value ?? '—'}</div>
-    <div class="stat-label">${escapeHtml(label)}</div>
-    ${sub ? `<div class="stat-sub">${escapeHtml(sub)}</div>` : ''}
-  </div>`;
-}
-
-function renderInsights() {
-  if (!insights) {
-    return `<p class="empty">No AI insights yet. This needs at least 2 runs of history and <code>ANTHROPIC_API_KEY</code> set when <code>npm run orchestrate</code> runs — then <code>generateInsights</code> will analyze trends and flag flaky tests automatically.</p>`;
-  }
-  const trendLabel = { improving: 'Improving', stable: 'Stable', degrading: 'Degrading', insufficient_data: 'Not enough data yet' }[
-    insights.trend
-  ] ?? insights.trend;
-  return `
-    <p class="insight-summary">${escapeHtml(insights.summary)}</p>
-    <p class="insight-trend">Trend: <strong>${escapeHtml(trendLabel)}</strong></p>
-    ${insights.flakyTests?.length ? `<h4>Flaky test candidates</h4><ul>${insights.flakyTests.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
-    ${insights.recurringFailurePatterns?.length ? `<h4>Recurring patterns</h4><ul>${insights.recurringFailurePatterns.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
-    ${insights.recommendations?.length ? `<h4>Recommendations</h4><ul>${insights.recommendations.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
-    <p class="insight-generated">Generated ${escapeHtml(insights.generatedAt ?? '')}</p>
-  `;
-}
-
-function renderHealingTable(events) {
-  if (events.length === 0) {
-    return `<p class="empty">No healing events recorded yet.</p>`;
-  }
-  const rows = events
-    .slice(-25)
-    .reverse()
-    .map(
-      (h) => `<tr>
-        <td class="mono">${escapeHtml(h.timestamp?.slice(0, 16).replace('T', ' ') ?? '')}</td>
-        <td>${escapeHtml(h.source)}</td>
-        <td class="mono">${escapeHtml(h.file)}${h.line ? `:${h.line}` : ''}</td>
-        <td><span class="pill" style="--pill-color:${h.successful ? '#5EEAD4' : '#F0677D'}">${h.successful ? 'healed' : 'needs human'}</span></td>
-        <td class="reason">${escapeHtml(h.reason ?? '')}</td>
-      </tr>`,
-    )
-    .join('\n');
-  return `<table>
-    <thead><tr><th>When</th><th>Source</th><th>File</th><th>Result</th><th>Reason</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`;
-}
-
-function renderWeekTopFailures() {
-  if (weekTopFailures.length === 0) {
-    return `<p class="empty">No failures in the last 7 days.</p>`;
-  }
-  return `<ul class="rank-list">
-    ${weekTopFailures.map(([title, count]) => `<li><span class="mono">${count}×</span> ${escapeHtml(title)}</li>`).join('')}
-  </ul>`;
-}
-
-function renderAllTimeTopFailures() {
-  if (allTimeTopFailures.length === 0) {
-    return `<p class="empty">No failures recorded yet.</p>`;
-  }
-  return `<ul class="rank-list">
-    ${allTimeTopFailures.map(([title, count]) => `<li><span class="mono">${count}×</span> ${escapeHtml(title)}</li>`).join('')}
-  </ul>`;
-}
-
-function renderBarBreakdown(entries, colorMap = {}) {
-  if (entries.length === 0) {
-    return `<p class="empty">No data yet.</p>`;
-  }
-  const max = Math.max(...entries.map(([, count]) => count));
-  return `<div class="bar-breakdown">
-    ${entries
-      .map(([label, count]) => {
-        const pct = max > 0 ? Math.round((count / max) * 100) : 0;
-        const color = colorMap[label] ?? 'var(--pass)';
-        return `<div class="bar-row">
-          <span class="bar-label mono">${escapeHtml(label)}</span>
-          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
-          <span class="bar-count mono">${count}</span>
-        </div>`;
-      })
-      .join('')}
-  </div>`;
-}
-
-function renderSourceBreakdown() {
-  const entries = Object.entries(sourceStats);
-  if (entries.length === 0) {
-    return `<p class="empty">No runs recorded yet.</p>`;
-  }
-  return `<table>
-    <thead><tr><th>Source</th><th>Runs</th><th>Pass rate</th></tr></thead>
-    <tbody>
-      ${entries
-        .map(
-          ([src, s]) => `<tr>
-            <td class="mono">${escapeHtml(src)}</td>
-            <td>${s.total}</td>
-            <td>${Math.round((s.passed / s.total) * 100)}%</td>
-          </tr>`,
-        )
-        .join('')}
-    </tbody>
-  </table>`;
-}
-
-function renderRecentRunsTable(runs) {
-  if (runs.length === 0) {
-    return `<p class="empty">No runs recorded yet.</p>`;
-  }
-  const rows = runs
-    .slice(-20)
-    .reverse()
-    .map((r) => {
-      const t = r.tests ?? {};
-      const failCount = r.failures?.length ?? 0;
-      return `<tr>
-        <td class="mono">${escapeHtml(r.execution?.startTime?.slice(0, 16).replace('T', ' ') ?? '')}</td>
-        <td>${escapeHtml(r.source ?? '')}</td>
-        <td><span class="pill" style="--pill-color:${colorFor(r.status)}">${escapeHtml(r.status)}</span></td>
-        <td class="mono">${t.passed ?? '—'}/${t.total ?? '—'}</td>
-        <td class="mono">${failCount}</td>
-        <td class="mono">${formatDuration(r.execution?.durationMs)}</td>
-      </tr>`;
-    })
-    .join('\n');
-  return `<table>
-    <thead><tr><th>When</th><th>Source</th><th>Status</th><th>Tests</th><th>Failures</th><th>Duration</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`;
-}
-
-// ---------------------------------------------------------------------------
-// Full page
-// ---------------------------------------------------------------------------
-
-const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>PlaywrightScripting — Automation Dashboard</title>
-<style>
-  :root {
-    --base: #10131A;
-    --surface: #171B24;
-    --border: #2A2F3A;
-    --text: #E8EAF0;
-    --muted: #8890A0;
-    --pass: #5EEAD4;
-    --healed: #F5A962;
-    --review: #F0677D;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--base);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    line-height: 1.5;
-    padding: 2.5rem 1.5rem 4rem;
-  }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-  main { max-width: 960px; margin: 0 auto; }
-  header { margin-bottom: 2.5rem; }
-  h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0 0 0.25rem;
-    letter-spacing: -0.01em;
-  }
-  header p { color: var(--muted); margin: 0; font-size: 0.9rem; }
-  section { margin-bottom: 2.75rem; }
-  h2 {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--muted);
-    margin: 0 0 1rem;
-    padding-bottom: 0.6rem;
-    border-bottom: 1px solid var(--border);
-  }
-  h3 { font-size: 1rem; margin: 0 0 0.75rem; }
-  h4 { font-size: 0.85rem; color: var(--muted); margin: 1rem 0 0.4rem; font-weight: 600; }
-  .waveform-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1.25rem; overflow-x: auto; }
-  .legend { display: flex; gap: 1.25rem; margin-top: 0.75rem; font-size: 0.8rem; color: var(--muted); }
-  .legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
-  .legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
-  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
-  .stat { background: var(--surface); padding: 1.25rem 1.25rem 1rem; }
-  .stat-value { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.9rem; font-weight: 500; color: var(--pass); }
-  .stat-label { color: var(--muted); font-size: 0.8rem; margin-top: 0.2rem; }
-  .stat-sub { color: var(--muted); font-size: 0.72rem; margin-top: 0.3rem; }
-  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1.5rem; }
-  .empty { color: var(--muted); font-size: 0.88rem; }
-  .empty code { background: var(--base); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.82rem; }
-  .insight-summary { font-size: 0.95rem; }
-  .insight-trend { color: var(--muted); font-size: 0.85rem; }
-  .insight-generated { color: var(--muted); font-size: 0.72rem; margin-top: 1rem; }
-  ul { margin: 0.25rem 0; padding-left: 1.2rem; font-size: 0.88rem; }
-  li { margin-bottom: 0.25rem; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-  th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
-  td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
-  td.reason { color: var(--muted); }
-  .pill { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.72rem; background: color-mix(in srgb, var(--pill-color) 18%, transparent); color: var(--pill-color); }
-  .rank-list { list-style: none; padding: 0; }
-  .rank-list li { padding: 0.3rem 0; border-bottom: 1px solid var(--border); }
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
-  .bar-breakdown { display: flex; flex-direction: column; gap: 0.6rem; }
-  .bar-row { display: grid; grid-template-columns: 90px 1fr 32px; align-items: center; gap: 0.6rem; font-size: 0.8rem; }
-  .bar-label { color: var(--muted); text-transform: lowercase; }
-  .bar-track { background: var(--base); border-radius: 3px; height: 8px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 3px; }
-  .bar-count { text-align: right; color: var(--muted); }
-</style>
-</head>
-<body>
-<main>
-
-  <header>
-    <h1>PlaywrightScripting automation dashboard</h1>
-    <p>Generated ${escapeHtml(new Date().toISOString())} · ${totalRuns} run(s) of history</p>
-  </header>
-
-  <section>
-    <h2>Run history</h2>
-    <div class="waveform-wrap">
-      ${renderWaveform(runHistory)}
-    </div>
-    <div class="legend">
-      <span><i style="background:var(--pass)"></i>Passed</span>
-      <span><i style="background:var(--healed)"></i>Healed / issues found</span>
-      <span><i style="background:var(--review)"></i>Needs a human</span>
-    </div>
-  </section>
-
-  <section>
-    <h2>Current state</h2>
-    <div class="stats-row">
-      ${renderStat('Pass rate', passRate !== null ? `${passRate}%` : null, `${passedRuns} of ${totalRuns} runs`)}
-      ${renderStat('Healing success rate', healSuccessRate !== null ? `${healSuccessRate}%` : null, `${totalHealSuccess} of ${totalHealAttempts} attempts`)}
-      ${renderStat('Latest status', latestRun ? escapeHtml(latestRun.status) : null, latestRun?.source)}
-      ${renderStat('Avg. run duration', formatDuration(avgDurationMs), maxDurationMs !== null ? `longest: ${formatDuration(maxDurationMs)}` : undefined)}
-    </div>
-  </section>
-
-  <section>
-    <h2>AI insights</h2>
-    <div class="panel">
-      ${renderInsights()}
-    </div>
-  </section>
-
-  <section>
-    <h2>Recent runs</h2>
-    <div class="panel">
-      ${renderRecentRunsTable(runHistory)}
-    </div>
-  </section>
-
-  <section>
-    <h2>Failure breakdown</h2>
-    <div class="two-col">
-      <div class="panel">
-        <h3>By category</h3>
-        ${renderBarBreakdown(classificationBreakdown, {
-          locator: 'var(--review)',
-          timeout: 'var(--healed)',
-          typescript: 'var(--pass)',
-          'js-syntax': 'var(--pass)',
-          assertion: 'var(--review)',
-          environment: 'var(--healed)',
-          other: 'var(--muted)',
-        })}
-        ${browserBreakdown.length ? `<h3 style="margin-top:1.5rem">By browser</h3>${renderBarBreakdown(browserBreakdown)}` : ''}
-      </div>
-      <div class="panel">
-        <h3>Most frequent failures, all time</h3>
-        ${renderAllTimeTopFailures()}
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <h2>By source</h2>
-    <div class="panel">
-      ${renderSourceBreakdown()}
-    </div>
-  </section>
-
-  <section>
-    <h2>Last 7 days</h2>
-    <div class="two-col">
-      <div class="panel">
-        <h3>Runs this week</h3>
-        <p class="stat-value" style="font-size:1.4rem">${weekRuns.length ? `${weekPassed} / ${weekRuns.length} passed` : '—'}</p>
-        <h3 style="margin-top:1.5rem">Healing events this week</h3>
-        <p class="stat-value" style="font-size:1.4rem">${weekHealing.length}</p>
-      </div>
-      <div class="panel">
-        <h3>Most frequent failures this week</h3>
-        ${renderWeekTopFailures()}
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Healing history</h2>
-    <div class="panel">
-      ${renderHealingTable(healingHistory)}
-    </div>
-  </section>
-
-</main>
 </body>
+
 </html>
 `;
 
-mkdirSync(REPORTS_DIR, { recursive: true });
-writeFileSync(OUT_FILE, html);
-console.log(`[dashboard] Wrote ${path.relative(REPO_ROOT, OUT_FILE)}`);
+fs.writeFileSync(
+  OUTPUT_FILE,
+  html,
+  "utf8"
+);
 
-// ---------------------------------------------------------------------------
-// Weekly markdown digest — same underlying data, different shape: short,
-// postable to Slack/email/a GitHub issue rather than opened as a full page.
-// ---------------------------------------------------------------------------
-
-const weeklyLines = [
-  `# Weekly automation report`,
-  ``,
-  `_${now.toISOString().slice(0, 10)} — covering the last 7 days_`,
-  ``,
-  `## Summary`,
-  ``,
-  weekRuns.length === 0
-    ? `No runs recorded in the last 7 days.`
-    : `${weekPassed} of ${weekRuns.length} run(s) passed (${Math.round((weekPassed / weekRuns.length) * 100)}%). ${weekHealing.length} healing event(s) recorded.`,
-  ``,
-];
-
-if (insights) {
-  weeklyLines.push(`## AI insights`, ``, insights.summary, ``, `Trend: **${insights.trend}**`, ``);
-  if (insights.flakyTests?.length) {
-    weeklyLines.push(`**Flaky test candidates:**`, ...insights.flakyTests.map((t) => `- ${t}`), ``);
-  }
-  if (insights.recommendations?.length) {
-    weeklyLines.push(`**Recommendations:**`, ...insights.recommendations.map((t) => `- ${t}`), ``);
-  }
-}
-
-weeklyLines.push(`## Most frequent failures this week`, ``);
-if (weekTopFailures.length === 0) {
-  weeklyLines.push(`None.`);
-} else {
-  weeklyLines.push(...weekTopFailures.map(([title, count]) => `- **${count}×** ${title}`));
-}
-weeklyLines.push(``, `## Healing events this week`, ``);
-if (weekHealing.length === 0) {
-  weeklyLines.push(`None.`);
-} else {
-  weeklyLines.push(
-    ...weekHealing
-      .slice(-20)
-      .map((h) => `- \`${h.file}${h.line ? `:${h.line}` : ''}\` — ${h.successful ? 'healed' : 'needs a human'}${h.reason ? ` (${h.reason})` : ''}`),
-  );
-}
-
-const weeklyReportFile = path.join(REPORTS_DIR, 'weekly-report.md');
-writeFileSync(weeklyReportFile, `${weeklyLines.join('\n')}\n`);
-console.log(`[dashboard] Wrote ${path.relative(REPO_ROOT, weeklyReportFile)}`);
+console.log(
+  `AI Test Intelligence dashboard generated:
+${OUTPUT_FILE}\`
+`);
