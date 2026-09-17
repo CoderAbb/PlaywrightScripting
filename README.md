@@ -72,7 +72,6 @@ PlaywrightScripting/
 └── README.md                     # Project documentation
 ```
 <img width="1427" height="800" alt="Screenshot 2026-09-16 at 2 36 54 PM" src="https://github.com/user-attachments/assets/a5590452-f8dc-4076-82e9-309e000e3b5d" />
-<img width="1383" height="455" alt="Screenshot 2026-09-16 at 2 37 24 PM" src="https://github.com/user-attachments/assets/9d2a8df6-87c4-45c5-a861-583c8fa72cb6" />
 
 ## 🛠️ Getting Started
 
