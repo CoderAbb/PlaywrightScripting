@@ -36,3 +36,29 @@ node_modules/
 .diagnostic-playwright.json
 .diagnostic-playwright.stderr
 
+# --- Append these lines to your existing .gitignore ---
+
+# Playwright / test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Allure reports & results (generated, don't commit)
+allure-report/
+allure-results/
+
+# Auth state / session storage (can leak machine identifiers & local paths)
+.auth/
+
+# Env & secrets
+.env
+.env.*
+
+# Editor/OS cruft
+.DS_Store
+.vscode/
+.idea/
+
+# Then remove the already-tracked generated files from git history tracking:
+#   git rm -r --cached allure-report allure-results .auth .DS_Store
+#   git commit -m "chore: stop tracking generated artifacts and local auth state"
