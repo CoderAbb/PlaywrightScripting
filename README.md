@@ -48,6 +48,8 @@ human ever has to touch a broken selector.
 - Structured test flows (login → shop → cart → checkout)
 - Reusable CLI login agent (Playwright MCP-based)
 
+<img width="640" height="424" alt="0C35DD84-F79D-42BB-9AC9-F0527DFDAFB2" src="https://github.com/user-attachments/assets/3e3bccfb-f985-41a4-b8f9-eb58725e0b56" />
+
 ## 📂 Project structure
 
 ```
