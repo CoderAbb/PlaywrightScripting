@@ -71,6 +71,8 @@ PlaywrightScripting/
 ├── package.json                  # Dependencies and project scripts
 └── README.md                     # Project documentation
 ```
+<img width="1419" height="800" alt="Screenshot 2026-09-13 at 1 55 33 PM" src="https://github.com/user-attachments/assets/611e9973-5ca2-403d-ad25-b19ff1e5a031" />
+
 <img width="1427" height="800" alt="Screenshot 2026-09-16 at 2 36 54 PM" src="https://github.com/user-attachments/assets/a5590452-f8dc-4076-82e9-309e000e3b5d" />
 
 ## 🛠️ Getting Started
