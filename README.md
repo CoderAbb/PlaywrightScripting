@@ -14,15 +14,13 @@ human ever has to touch a broken selector.
 
 ## How it works
 
-```mermaid
-flowchart LR
-    A[Playwright Test Run] -->|failure detected| B[CI Failure Signal]
-    B --> C[LangGraph Orchestration Agent]
-    C -->|diagnoses selector/auth issue| D[Auto-Heal Script]
-    D -->|patches page object| E[Re-run Test]
-    E -->|pass| F[Allure 3 Report + Offline Dashboard]
-    E -->|still failing| G[Flag for Human Review]
-```
+<img src="./docs/auto-heal-flow.svg" alt="Auto-healing CI flow: Playwright test run leads to a CI failure signal, then a LangGraph orchestration agent diagnoses the issue, an auto-heal script patches the page object, the test re-runs, and the result either produces an Allure report or flags the failure for human review." width="680">
+
+- **Failure detected** → a CI failure signal is raised from the Playwright run.
+- **Orchestration agent** diagnoses the selector/auth issue (LangGraph-based).
+- **Auto-heal script** patches the page object and the test re-runs.
+- **Pass** → Allure 3 report + offline dashboard updated.
+- **Still failing** → flagged for human review instead of silently retrying.
 
 - **Auto-healing CI**: when a run fails on a broken selector or a stale
   session, an orchestration agent attempts to diagnose and patch it rather
@@ -55,51 +53,17 @@ flowchart LR
 ```
 PlaywrightScripting/
 │
-├── .github/
-│   └── workflows/
-│       └── auto-heal.yml         # Daily GitHub Actions job: detect + fix + open PR
-│
-├── pages/                        # Page Object Model classes
-│   ├── LoginPage.ts
-│   ├── ToolshopProductPage.ts
-│   ├── ToolshopCartPage.ts
-│   └── ToolshopCheckoutPage.ts
-│
-├── tests/                        # Spec files (Playwright test runner)
-│   ├── checkout.spec.ts
-│   ├── toolshopCartCheckout.spec.ts
-│   └── ...
-├── config/                       # Shared URL and test-data modules
-│   ├── urls.ts                   # Centralized site URLs used by tests
-│   └── testData.ts               # Centralized test data (emails, names, postal codes)
-│
-├── scripts/
-│   └── auto-heal.mjs             # Self-healing agent: tsc scan -> Claude fix -> verify -> PR
-│
-├── jenkins-agent/                # Standalone Jenkins job scheduler/reporter
-├── jenkins-config.xml            # Freestyle job: install -> heal:detect (non-blocking) -> test
-├── Jenkinsfile.autoheal          # Optional Jenkins pipeline mirror of the GitHub Actions job
-│
-├── login-agent.ts / .mjs         # CLI: auto-discovers login forms, generates a spec file
-├── fixtures.ts                   # Custom Playwright fixtures (e.g. authenticatedPage)
-├── global-setup.ts               # Shared base URLs, test data, and pre-auth storage state
-├── playwright.config.ts          # Global Playwright configuration
-├── package.json                  # Dependencies and project scripts
-└── README.md                     # Project documentation
+├── .github/workflows/     # CI pipelines (GitHub Actions)
+├── tests/                 # Specs and page objects
+├── jenkins-agent/         # Optional Jenkins integration
+├── global-setup.ts        # Auth/session bootstrap
+├── playwright.config.ts
+└── package.json
 ```
-<img width="1419" height="800" alt="Screenshot 2026-09-13 at 1 55 33 PM" src="https://github.com/user-attachments/assets/ea5bf74d-b84a-493a-be73-9e4edeb3350a" />
 
-<img width="1427" height="800" alt="Screenshot 2026-09-16 at 2 36 54 PM" src="https://github.com/user-attachments/assets/fe918cb0-d3ce-4699-b6a9-bbac23cd7e8d" />
+## 🛠 Installation
 
-## 🛠️ Getting Started
-
-### Prerequisites
-
-Ensure you have Node.js (v18 or higher) installed on your machine.
-
-### Installation & Setup
-
-**Clone the repository:**
+Requires Node.js 18+.
 
 ```bash
 git clone https://github.com/CoderAbb/PlaywrightScripting.git
