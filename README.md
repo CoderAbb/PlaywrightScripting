@@ -55,17 +55,51 @@ flowchart LR
 ```
 PlaywrightScripting/
 │
-├── .github/workflows/     # CI pipelines (GitHub Actions)
-├── tests/                 # Specs and page objects
-├── jenkins-agent/         # Optional Jenkins integration
-├── global-setup.ts        # Auth/session bootstrap
-├── playwright.config.ts
-└── package.json
+├── .github/
+│   └── workflows/
+│       └── auto-heal.yml         # Daily GitHub Actions job: detect + fix + open PR
+│
+├── pages/                        # Page Object Model classes
+│   ├── LoginPage.ts
+│   ├── ToolshopProductPage.ts
+│   ├── ToolshopCartPage.ts
+│   └── ToolshopCheckoutPage.ts
+│
+├── tests/                        # Spec files (Playwright test runner)
+│   ├── checkout.spec.ts
+│   ├── toolshopCartCheckout.spec.ts
+│   └── ...
+├── config/                       # Shared URL and test-data modules
+│   ├── urls.ts                   # Centralized site URLs used by tests
+│   └── testData.ts               # Centralized test data (emails, names, postal codes)
+│
+├── scripts/
+│   └── auto-heal.mjs             # Self-healing agent: tsc scan -> Claude fix -> verify -> PR
+│
+├── jenkins-agent/                # Standalone Jenkins job scheduler/reporter
+├── jenkins-config.xml            # Freestyle job: install -> heal:detect (non-blocking) -> test
+├── Jenkinsfile.autoheal          # Optional Jenkins pipeline mirror of the GitHub Actions job
+│
+├── login-agent.ts / .mjs         # CLI: auto-discovers login forms, generates a spec file
+├── fixtures.ts                   # Custom Playwright fixtures (e.g. authenticatedPage)
+├── global-setup.ts               # Shared base URLs, test data, and pre-auth storage state
+├── playwright.config.ts          # Global Playwright configuration
+├── package.json                  # Dependencies and project scripts
+└── README.md                     # Project documentation
 ```
+<img width="1426" height="797" alt="Screenshot 2026-08-30 at 4 54 50 PM" src="https://github.com/user-attachments/assets/16c57a2a-cea9-437f-afd0-babef7b3d593" />
 
-## 🛠 Installation
+<img width="1370" height="691" alt="Screenshot 2026-09-03 at 12 13 18 PM" src="https://github.com/user-attachments/assets/5ea8ec40-f1b2-4891-8b9a-10579adab49e" />
 
-Requires Node.js 18+.
+## 🛠️ Getting Started
+
+### Prerequisites
+
+Ensure you have Node.js (v18 or higher) installed on your machine.
+
+### Installation & Setup
+
+**Clone the repository:**
 
 ```bash
 git clone https://github.com/CoderAbb/PlaywrightScripting.git
