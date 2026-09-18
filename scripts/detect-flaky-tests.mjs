@@ -2,13 +2,11 @@
 /**
  * detect-flaky-tests.mjs
  *
- * Fills in the "flaky" script that package.json already pointed at. Reads
- * the current run's Playwright results, records this run into
- * reports/flaky-history.json, then combines in-run retry evidence with
- * cross-run pass/fail history to flag tests worth attention — routing each
- * one through graph/flakyTestAgent.mjs for a category + recommendation,
- * the same way scripts/analyze-results.mjs routes failures through
- * failureRcaAgent.mjs.
+ * Standalone CLI entry point for flaky classification (used directly by
+ * the flaky-detection.yml CI workflow, and for ad hoc local runs). The
+ * actual scoring logic lives in scripts/lib/flaky-detect.mjs, shared with
+ * scripts/analyze-results.mjs so `reports/intelligence.json` carries the
+ * same numbers.
  *
  * Usage:
  *   npm run flaky                  # human-readable report + reports/flaky-report.json
@@ -16,11 +14,14 @@
  *   npm run flaky -- --quarantine  # also writes reports/quarantine-list.json
  *   npm run flaky -- --strict      # exit 1 if any HIGH severity flaky test is found
  *   npm run flaky -- --threshold=0.15
+ *
+ * Note: don't run this back-to-back with `npm run analyze` on the same test
+ * run — analyze already calls into the same detector and records the run;
+ * running both would double-count that run in reports/flaky-history.json.
  */
 
 import { loadResults, flattenTests } from "../graph/intelligence/result-parser.mjs";
-import { flakyTestGraph } from "../graph/flakyTestAgent.mjs";
-import { recordRun, loadHistory, buildEvidence } from "./lib/flaky-history.mjs";
+import { runFlakyDetection } from "./lib/flaky-detect.mjs";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -40,12 +41,6 @@ const REPORT_DIR = path.resolve("reports");
 const REPORT_FILE = path.join(REPORT_DIR, "flaky-report.json");
 const QUARANTINE_FILE = path.join(REPORT_DIR, "quarantine-list.json");
 
-function severityFor(interRunFailRate, intraRunRetries) {
-  if (interRunFailRate >= 0.4 || intraRunRetries >= 2) return "HIGH";
-  if (interRunFailRate > 0 || intraRunRetries === 1) return "MEDIUM";
-  return "LOW";
-}
-
 async function main() {
   const results = loadResults();
   const tests = flattenTests(results);
@@ -59,68 +54,13 @@ async function main() {
     process.exit(0);
   }
 
-  // Persist this run, then look at everything we know including it.
-  recordRun(tests);
-  const history = loadHistory();
-
-  // Don't pre-filter by this run's status alone — a test that passed clean
-  // this run but flipped status in earlier runs is exactly what history is
-  // for. hasFlakinessSignal below does the real filtering.
-  const flaky = [];
-
-  for (const test of tests) {
-    const evidence = buildEvidence(test.id, test, history);
-
-    // Skip tests that only ever failed cleanly with no retry/history signal —
-    // that's a real failure, not a flakiness candidate, and analyze-results.mjs
-    // / failureRcaAgent.mjs already cover it.
-    const hasFlakinessSignal =
-      evidence.intraRunRetries > 0 ||
-      (evidence.runsObserved > 0 && evidence.interRunFailRate > 0 && evidence.interRunFailRate < 1);
-
-    if (!hasFlakinessSignal) continue;
-
-    const combinedScore = Math.max(
-      evidence.intraRunRetries > 0 ? 0.5 : 0,
-      evidence.interRunFailRate
-    );
-
-    if (combinedScore < THRESHOLD) continue;
-
-    const { category, confidence, recommendation } = await flakyTestGraph.invoke({
-      test,
-      evidence
-    });
-
-    flaky.push({
-      id: test.id,
-      title: test.title,
-      file: test.file,
-      score: Number(combinedScore.toFixed(2)),
-      severity: severityFor(evidence.interRunFailRate, evidence.intraRunRetries),
-      category,
-      confidence,
-      recommendation,
-      evidence
-    });
-  }
-
-  flaky.sort((a, b) => b.score - a.score);
-
-  const report = {
-    generatedAt: new Date().toISOString(),
-    threshold: THRESHOLD,
-    runsInHistory: history.runs.length,
-    testsScanned: tests.length,
-    flakyCount: flaky.length,
-    flakyTests: flaky
-  };
+  const report = await runFlakyDetection(tests, { threshold: THRESHOLD });
 
   fs.mkdirSync(REPORT_DIR, { recursive: true });
   fs.writeFileSync(REPORT_FILE, JSON.stringify(report, null, 2));
 
   if (QUARANTINE) {
-    const quarantineList = flaky
+    const quarantineList = report.flakyTests
       .filter(t => t.severity !== "LOW")
       .map(t => ({ id: t.id, title: t.title, file: t.file, reason: t.category }));
     fs.writeFileSync(QUARANTINE_FILE, JSON.stringify(quarantineList, null, 2));
@@ -132,7 +72,7 @@ async function main() {
     printSummary(report);
   }
 
-  if (STRICT && flaky.some(t => t.severity === "HIGH")) {
+  if (STRICT && report.flakyTests.some(t => t.severity === "HIGH")) {
     process.exit(1);
   }
 }

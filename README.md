@@ -14,15 +14,13 @@ human ever has to touch a broken selector.
 
 ## How it works
 
-```mermaid
-flowchart LR
-    A[Playwright Test Run] -->|failure detected| B[CI Failure Signal]
-    B --> C[LangGraph Orchestration Agent]
-    C -->|diagnoses selector/auth issue| D[Auto-Heal Script]
-    D -->|patches page object| E[Re-run Test]
-    E -->|pass| F[Allure 3 Report + Offline Dashboard]
-    E -->|still failing| G[Flag for Human Review]
-```
+<img src="./docs/auto-heal-flow.svg" alt="Auto-healing CI flow: Playwright test run leads to a CI failure signal, then a LangGraph orchestration agent diagnoses the issue, an auto-heal script patches the page object, the test re-runs, and the result either produces an Allure report or flags the failure for human review." width="680">
+
+- **Failure detected** → a CI failure signal is raised from the Playwright run.
+- **Orchestration agent** diagnoses the selector/auth issue (LangGraph-based).
+- **Auto-heal script** patches the page object and the test re-runs.
+- **Pass** → Allure 3 report + offline dashboard updated.
+- **Still failing** → flagged for human review instead of silently retrying.
 
 - **Auto-healing CI**: when a run fails on a broken selector or a stale
   session, an orchestration agent attempts to diagnose and patch it rather
@@ -49,6 +47,10 @@ flowchart LR
 - Allure 3 reporting + offline HTML dashboard
 - Structured test flows (login → shop → cart → checkout)
 - Reusable CLI login agent (Playwright MCP-based)
+- Flaky test detection agent — scores tests across runs and classifies *why*
+  they're flaky, not just *that* they are
+
+<img width="640" height="424" alt="0C35DD84-F79D-42BB-9AC9-F0527DFDAFB2" src="https://github.com/user-attachments/assets/3e3bccfb-f985-41a4-b8f9-eb58725e0b56" />
 
 ## 📂 Project structure
 
@@ -94,6 +96,35 @@ Allure results are generated under `allure-results/` (gitignored) and
 rendered into `allure-report/` — see [Allure docs](https://allurereport.org/)
 for hosting the report as a static site (e.g. GitHub Pages) if you want a
 shareable link.
+
+## 🔍 Flaky test detection
+
+```bash
+npm test                  # produces test-results/results.json
+npm run flaky              # score + classify flaky tests from this run + history
+npm run flaky:quarantine   # also writes reports/quarantine-list.json
+npm run flaky:strict       # exit 1 if any HIGH severity flaky test is found (for CI gating)
+```
+
+Each run is appended to `reports/flaky-history.json` (last 30 runs, gitignored
+like the rest of `reports/`). `scripts/lib/flaky-detect.mjs` combines
+in-run retry evidence with that history and routes anything above the
+flakiness threshold through `graph/flakyTestAgent.mjs`, which classifies the
+*cause* — `RACE_CONDITION`, `TIMING_SENSITIVE`, `NETWORK_DEPENDENT`,
+`TEST_ISOLATION`, `ENVIRONMENTAL`, or `TRUE_BUG` (fails too consistently to
+be flakiness at all) — with a concrete recommendation, the same
+LangGraph-node pattern `failureRcaAgent.mjs` uses for failure RCA. That
+same detector is also called from `npm run analyze`, so its results are
+embedded in `reports/intelligence.json` (`flakyDetection`) and rendered as
+their own "AI Flaky Detection" table in the `npm run dashboard` HTML report,
+right alongside AI failure RCA — not just in a standalone report. The
+standalone `reports/flaky-report.json` (from `npm run flaky` directly)
+stays useful on its own for CI gating (`flaky:strict`) and quarantining
+(`flaky:quarantine`); just don't run `flaky` immediately after `analyze` on
+the same test run, or that run gets counted twice in the history.
+The [`flaky-detection.yml`](.github/workflows/flaky-detection.yml) workflow
+runs the standalone CLI on demand (or on a schedule you enable) and uploads
+`flaky-report.json` as a build artifact.
 
 ## 🤝 Contributing
 
