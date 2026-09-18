@@ -57,6 +57,61 @@ export interface AutomationRunState {
 }
 
 /** One row in reports/healing-history.json — an individual fix attempt, not a whole run. */
+/** Output categories from graph/flakyTestAgent.mjs's classifyFlakiness node. */
+export type FlakyCategory =
+  | 'RACE_CONDITION'
+  | 'TIMING_SENSITIVE'
+  | 'NETWORK_DEPENDENT'
+  | 'TEST_ISOLATION'
+  | 'ENVIRONMENTAL'
+  | 'TRUE_BUG'
+  | 'INSUFFICIENT_DATA'
+  | 'UNCLASSIFIED';
+
+export type FlakySeverity = 'LOW' | 'MEDIUM' | 'HIGH';
+
+/** Evidence assembled by scripts/lib/flaky-history.mjs for one test. */
+export interface FlakyEvidence {
+  intraRunRetries: number;
+  /** 0–1, share of known runs where this test failed. */
+  interRunFailRate: number;
+  runsObserved: number;
+  errorSignatures: string[];
+  durationVarianceMs: number;
+}
+
+/** One row in reports/flaky-report.json's flakyTests array. */
+export interface FlakyTestRecord {
+  id: string;
+  title: string;
+  file: string;
+  score: number;
+  severity: FlakySeverity;
+  category: FlakyCategory;
+  confidence: number;
+  recommendation: string;
+  evidence: FlakyEvidence;
+}
+
+export interface FlakyReport {
+  generatedAt: string;
+  threshold: number;
+  runsInHistory: number;
+  testsScanned: number;
+  flakyCount: number;
+  flakyTests: FlakyTestRecord[];
+}
+
+/** One row in reports/flaky-history.json's runs array. */
+export interface FlakyHistoryRun {
+  runId: string;
+  timestamp: string;
+  tests: Record<
+    string,
+    { status: string; retryCount: number; durationMs: number; error: string | null }
+  >;
+}
+
 export interface HealingEvent {
   timestamp: string;
   runId: string;

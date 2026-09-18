@@ -8,7 +8,7 @@ test('kids shopping @Kidsshopping', async ({ page }) => {
 
   await page.goto(`${SHOP_BASE_URL}/kids-wear.php`);
   await page.locator('button').filter({ hasText: /add to cart/i }).first().click();
-  await page.locator('button').filter({ hasText: /add to cart/i }).nth(1).click();
+  await page.locator('a[aria-label="Cart"], a[title="Cart"]').first().click();
 
   await page.locator('a[aria-label="Cart"], a[title="Cart"]').first().click();
   await expect(page.locator('body')).toContainText('Remove');

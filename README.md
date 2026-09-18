@@ -14,13 +14,15 @@ human ever has to touch a broken selector.
 
 ## How it works
 
-<img src="./docs/auto-heal-flow.svg" alt="Auto-healing CI flow: Playwright test run leads to a CI failure signal, then a LangGraph orchestration agent diagnoses the issue, an auto-heal script patches the page object, the test re-runs, and the result either produces an Allure report or flags the failure for human review." width="680">
-
-- **Failure detected** → a CI failure signal is raised from the Playwright run.
-- **Orchestration agent** diagnoses the selector/auth issue (LangGraph-based).
-- **Auto-heal script** patches the page object and the test re-runs.
-- **Pass** → Allure 3 report + offline dashboard updated.
-- **Still failing** → flagged for human review instead of silently retrying.
+```mermaid
+flowchart LR
+    A[Playwright Test Run] -->|failure detected| B[CI Failure Signal]
+    B --> C[LangGraph Orchestration Agent]
+    C -->|diagnoses selector/auth issue| D[Auto-Heal Script]
+    D -->|patches page object| E[Re-run Test]
+    E -->|pass| F[Allure 3 Report + Offline Dashboard]
+    E -->|still failing| G[Flag for Human Review]
+```
 
 - **Auto-healing CI**: when a run fails on a broken selector or a stale
   session, an orchestration agent attempts to diagnose and patch it rather
@@ -47,8 +49,6 @@ human ever has to touch a broken selector.
 - Allure 3 reporting + offline HTML dashboard
 - Structured test flows (login → shop → cart → checkout)
 - Reusable CLI login agent (Playwright MCP-based)
-
-<img width="640" height="424" alt="0C35DD84-F79D-42BB-9AC9-F0527DFDAFB2" src="https://github.com/user-attachments/assets/3e3bccfb-f985-41a4-b8f9-eb58725e0b56" />
 
 ## 📂 Project structure
 

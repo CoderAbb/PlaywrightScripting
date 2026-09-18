@@ -1,0 +1,86 @@
+name: Flaky Test Detection
+
+# Runs the suite and scores every test for flakiness across this run and
+# recent history (reports/flaky-history.json, committed as a workflow
+# artifact so history survives between runs). On-demand by default — same
+# cost-conscious pattern as auto-heal.yml. Uncomment the schedule to run it
+# unattended (e.g. weekly) once you want trend data building up automatically.
+
+on:
+  # schedule:
+  #   - cron: '0 6 * * 1'   # weekly, Monday 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      strict:
+        description: 'Fail the job if any HIGH severity flaky test is found'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  flaky-detection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Restore flaky-history cache
+        uses: actions/cache@v4
+        with:
+          path: reports/flaky-history.json
+          key: flaky-history-${{ github.ref_name }}
+          restore-keys: |
+            flaky-history-
+
+      - name: Run tests
+        run: npm test
+        continue-on-error: true
+        env:
+          CI: true
+
+      - name: Detect flaky tests
+        id: flaky
+        run: |
+          if [ "${{ inputs.strict }}" = "true" ]; then
+            npm run flaky:strict
+          else
+            npm run flaky
+          fi
+        continue-on-error: true
+
+      - name: Save flaky-history cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: reports/flaky-history.json
+          key: flaky-history-${{ github.ref_name }}-${{ github.run_id }}
+
+      - name: Upload flaky report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flaky-report
+          path: reports/flaky-report.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Fail if strict mode found HIGH severity flaky tests
+        if: steps.flaky.outcome == 'failure'
+        run: |
+          echo "::warning::Flaky detection found HIGH severity flaky test(s) in strict mode. See the flaky-report artifact."
+          exit 1
