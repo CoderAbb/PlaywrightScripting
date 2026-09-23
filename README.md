@@ -9,6 +9,7 @@ human ever has to touch a broken selector.
 
 [![CI](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/YOUR_WORKFLOW_FILE.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Playwright Tests](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml)
 
 ---
 
