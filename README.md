@@ -7,7 +7,7 @@ This isn't just a Playwright starter kit. It's a layered system where CI
 failures are diagnosed and auto-repaired by an orchestration agent before a
 human ever has to touch a broken selector.
 
-[![CI](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/YOUR_WORKFLOW_FILE.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions)
+[![CI](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/YOUR_WORKFLOW_FILE.yml/badge.svg)]
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Playwright Tests](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml)
 
