@@ -11,6 +11,7 @@ human ever has to touch a broken selector.
 [![Playwright Tests](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml)
 [![Flaky Test Detection](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml)
 [![Auto-Heal](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/auto-heal.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/auto-heal.yml)
+[![CodeQL - Code Quality](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-quality/codeql/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-quality/codeql)
 
 ---
 
