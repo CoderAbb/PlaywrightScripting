@@ -9,6 +9,7 @@ human ever has to touch a broken selector.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Playwright Tests](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml)
+[![Flaky Test Detection](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml)
 
 ---
 
