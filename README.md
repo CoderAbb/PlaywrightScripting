@@ -7,9 +7,11 @@ This isn't just a Playwright starter kit. It's a layered system where CI
 failures are diagnosed and auto-repaired by an orchestration agent before a
 human ever has to touch a broken selector.
 
-[![CI](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/YOUR_WORKFLOW_FILE.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Playwright Tests](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml)
+[![Flaky Test Detection](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml)
+[![Auto-Heal](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/auto-heal.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/auto-heal.yml)
+[![CodeQL - Code Quality](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-quality/codeql/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-quality/codeql)
 
 ---
 
