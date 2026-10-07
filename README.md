@@ -1,72 +1,62 @@
-# PlaywrightScripting
+# 📘 PlaywrightScripting
 
-**An AI-orchestrated, self-healing Playwright automation framework** — built
-with TypeScript, LangGraph-based orchestration, and Allure 3 reporting.
+**AI-orchestrated end-to-end test automation with Playwright, TypeScript, and LangGraph.**
 
-This isn't just a Playwright starter kit. It's a layered system where CI
-failures are diagnosed and auto-repaired by an orchestration agent before a
-human ever has to touch a broken selector.
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Playwright Tests](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml)
-[![Flaky Test Detection](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml)
-[![Auto-Heal](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/auto-heal.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/auto-heal.yml)
-[![CodeQL - Code Quality](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-quality/codeql/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-quality/codeql)
+Started as a straightforward Playwright + TypeScript automation project and has grown into a
+self-healing test framework: it runs your suite, classifies *why* each test failed, auto-fixes
+what's safe to auto-fix, and flags what isn't — with a live dashboard showing the full picture.
 
 ---
 
-## How it works
+## 🚀 What this is
 
-<img src="./docs/auto-heal-flow.svg" alt="Auto-healing CI flow: Playwright test run leads to a CI failure signal, then a LangGraph orchestration agent diagnoses the issue, an auto-heal script patches the page object, the test re-runs, and the result either produces an Allure report or flags the failure for human review." width="680">
-
-- **Failure detected** → a CI failure signal is raised from the Playwright run.
-- **Orchestration agent** diagnoses the selector/auth issue (LangGraph-based).
-- **Auto-heal script** patches the page object and the test re-runs.
-- **Pass** → Allure 3 report + offline dashboard updated.
-- **Still failing** → flagged for human review instead of silently retrying.
-
-- **Auto-healing CI**: when a run fails on a broken selector or a stale
-  session, an orchestration agent attempts to diagnose and patch it rather
-  than just reporting red.
-- **LangGraph orchestration**: coordinates multi-step diagnosis/repair flows
-  instead of a single monolithic retry.
-- **Allure 3 + offline HTML dashboard**: results are viewable without a
-  hosted Allure server.
-- **Prioritized selector strategy**: role/text-based selectors first, with
-  fallbacks, to reduce brittleness in the first place.
-
-> ⚠️ This project is under active development — see [Issues](../../issues)
-> and [Discussions](../../discussions) for current direction.
+✔ Playwright Test Runner with TypeScript, cross-browser (Chromium, Firefox, WebKit)
+✔ Structured test flows (login → shop → cart → checkout) with modern selectors (`getByRole`, `getByTestId`, `getByText`)
+✔ **AI-powered failure triage** — every failure is classified (timeout vs. assertion) and diagnosed with a confidence score and a recommendation
+✔ **Self-healing CI** — syntax/type errors and broken locators are auto-fixed and verified; genuine behavior regressions are never auto-fixed, only flagged for human review
+✔ **Flaky test detection** — tests that fail then pass on retry are surfaced as flaky candidates, not silently ignored
+✔ **AI Test Intelligence dashboard** — pass rate, failure breakdown, RCA table, and flaky candidates in one view
+✔ CI integration for both GitHub Actions and Jenkins
+✔ HTML reports, Allure reporting, and full trace viewer support
 
 ---
 
-## 🚀 Core features
+## 🧠 How the self-healing pipeline works
 
-- Playwright Test Runner with TypeScript
-- Cross-browser automation (Chromium, Firefox, WebKit)
-- Modern selectors (`getByRole`, `getByText`, `locator`)
-- Auto-healing CI scripts for GitHub Actions
-- LangGraph-based orchestration layer
-- Allure 3 reporting + offline HTML dashboard
-- Structured test flows (login → shop → cart → checkout)
-- Reusable CLI login agent (Playwright MCP-based)
-- Flaky test detection agent — scores tests across runs and classifies *why*
-  they're flaky, not just *that* they are
+Three categories of "broken," three different responses:
 
-<img width="640" height="424" alt="0C35DD84-F79D-42BB-9AC9-F0527DFDAFB2" src="https://github.com/user-attachments/assets/3e3bccfb-f985-41a4-b8f9-eb58725e0b56" />
+| Failure type | Example | What happens |
+|---|---|---|
+| **Syntax / type error** | A `.ts`/`.mjs` file doesn't compile | Auto-fixed by `auto-heal.mjs`, re-verified, before tests even run |
+| **Locator-class failure** | `locator.click: Timeout 10000ms exceeded` | Auto-fixed by `heal-locators.mjs` using a role → testid → label → text priority ladder, then the spec is re-run to confirm the fix actually works |
+| **Assertion-class failure** | App returned a value different from what the test expected | **Never auto-fixed.** This might mean the app's behavior genuinely changed — "fixing" the assertion could silently hide a real regression. Instead it's written to a `reports/needs-human-review-*.md` file for manual review |
 
-## 📂 Project structure
+The orchestrator that chains all of this together is `scripts/pipeline.mjs` — one command that runs the
+suite, classifies every failure, applies the safe fixes, and tells you exactly what still needs eyes on it.
+
+---
+
+## 📂 Project Structure
 
 ```
 PlaywrightScripting/
 │
-├── .github/workflows/     # CI pipelines (GitHub Actions)
-├── tests/                 # Specs and page objects
-├── jenkins-agent/         # Optional Jenkins integration
-├── global-setup.ts        # Auth/session bootstrap
+├── tests/                      # Spec files
+├── scripts/
+│   ├── auto-heal.mjs            # TypeScript/JS syntax auto-fixer (pre-test gate)
+│   ├── heal-locators.mjs        # Locator-failure healer, verified by re-run
+│   ├── pipeline.mjs             # End-to-end orchestrator (run -> classify -> heal -> report)
+│   ├── detect-flaky-tests.mjs   # Flaky candidate detection
+│   ├── analyze-results.mjs      # AI RCA / failure analysis
+│   └── lib/automation-state.mjs # Shared run-state tracking
+├── .github/workflows/           # CI pipelines
+├── jenkins-agent/, jenkins-config.xml
+├── global-setup.ts
 ├── playwright.config.ts
 └── package.json
 ```
+
+---
 
 ## 🛠 Installation
 
@@ -79,69 +69,65 @@ npm install
 npx playwright install
 ```
 
-## ▶️ Running tests
+For the AI-powered scripts (auto-heal, heal-locators, RCA analysis), set an Anthropic API key:
 
 ```bash
-npx playwright test              # full suite
-npx playwright test --headed     # headed mode
-npx playwright test tests/shoppingCheckout.spec.ts   # single spec
+export ANTHROPIC_API_KEY=sk-...
 ```
 
-## 📊 Reports & tracing
+---
+
+## ▶️ Running Tests
 
 ```bash
-npx playwright show-report       # HTML report
-npx playwright test --trace on   # enable tracing
-npx playwright show-trace trace.zip
+npx playwright test                          # full suite
+npx playwright test --headed                  # headed mode
+npx playwright test tests/checkout.spec.ts     # a specific spec
 ```
 
-Allure results are generated under `allure-results/` (gitignored) and
-rendered into `allure-report/` — see [Allure docs](https://allurereport.org/)
-for hosting the report as a static site (e.g. GitHub Pages) if you want a
-shareable link.
-
-## 🔍 Flaky test detection
+## 🩺 Running the self-healing pipeline
 
 ```bash
-npm test                  # produces test-results/results.json
-npm run flaky              # score + classify flaky tests from this run + history
-npm run flaky:quarantine   # also writes reports/quarantine-list.json
-npm run flaky:strict       # exit 1 if any HIGH severity flaky test is found (for CI gating)
+npm run pipeline              # run, classify, auto-heal, report
+npm run pipeline:dry-run      # same, but don't write any fixes
+npm run pipeline:pr           # auto-heal, then open a PR instead of committing locally
 ```
 
-Each run is appended to `reports/flaky-history.json` (last 30 runs, gitignored
-like the rest of `reports/`). `scripts/lib/flaky-detect.mjs` combines
-in-run retry evidence with that history and routes anything above the
-flakiness threshold through `graph/flakyTestAgent.mjs`, which classifies the
-*cause* — `RACE_CONDITION`, `TIMING_SENSITIVE`, `NETWORK_DEPENDENT`,
-`TEST_ISOLATION`, `ENVIRONMENTAL`, or `TRUE_BUG` (fails too consistently to
-be flakiness at all) — with a concrete recommendation, the same
-LangGraph-node pattern `failureRcaAgent.mjs` uses for failure RCA. That
-same detector is also called from `npm run analyze`, so its results are
-embedded in `reports/intelligence.json` (`flakyDetection`) and rendered as
-their own "AI Flaky Detection" table in the `npm run dashboard` HTML report,
-right alongside AI failure RCA — not just in a standalone report. The
-standalone `reports/flaky-report.json` (from `npm run flaky` directly)
-stays useful on its own for CI gating (`flaky:strict`) and quarantining
-(`flaky:quarantine`); just don't run `flaky` immediately after `analyze` on
-the same test run, or that run gets counted twice in the history.
-The [`flaky-detection.yml`](.github/workflows/flaky-detection.yml) workflow
-runs the standalone CLI on demand (or on a schedule you enable) and uploads
-`flaky-report.json` as a build artifact.
+Individual pieces can also be run on their own:
 
-## 🤝 Contributing
+```bash
+npm run heal:detect           # syntax check only, no API key needed
+npm run heal                  # auto-fix syntax/type errors
+npm run heal-locators:dry-run # preview locator fixes without applying
+npm run heal-locators         # fix + verify locator failures
+npm run flaky                 # detect flaky candidates (needs --retries on the run that fed it)
+npm run intelligence          # analyze + render the dashboard
+```
 
-Contributions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) for
-setup, conventions, and how to open a PR. Bug reports and feature ideas go
-through [Issues](../../issues); open-ended questions go in
-[Discussions](../../discussions).
+## 📊 Dashboard & Reports
 
-## 📦 Recommended VS Code extensions
+```bash
+npm run dashboard             # render the AI Test Intelligence dashboard
+npx playwright show-report    # standard Playwright HTML report
+npx playwright test --trace on && npx playwright show-trace trace.zip
+```
+
+The dashboard shows total tests, pass rate, a timeout/assertion failure breakdown, an AI-generated
+root-cause table per failure (category, confidence, diagnosis, recommendation), and the current
+flaky-candidate list.
+
+---
+
+## 📦 Recommended VS Code Extensions
 
 - Playwright Test for VS Code
 - ESLint
 - Prettier
 
-## License
+---
 
-[MIT](./LICENSE)
+## 🗺 Roadmap
+
+- [ ] Quarantine tests that stay flaky across N consecutive runs instead of re-healing every time
+- [ ] Wire the dashboard's "Investigate" action to open the relevant trace file
+- [ ] Persist flaky/failure history across runs for trend tracking
