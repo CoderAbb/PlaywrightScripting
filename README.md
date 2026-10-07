@@ -40,20 +40,34 @@ suite, classifies every failure, applies the safe fixes, and tells you exactly w
 
 ```
 PlaywrightScripting/
+├── tests/
+│   ├── checkout.spec.ts
+│   ├── newtest.spec.ts
+│   └── flaky.spec.ts
 │
-├── tests/                      # Spec files
 ├── scripts/
-│   ├── auto-heal.mjs            # TypeScript/JS syntax auto-fixer (pre-test gate)
-│   ├── heal-locators.mjs        # Locator-failure healer, verified by re-run
-│   ├── pipeline.mjs             # End-to-end orchestrator (run -> classify -> heal -> report)
-│   ├── detect-flaky-tests.mjs   # Flaky candidate detection
-│   ├── analyze-results.mjs      # AI RCA / failure analysis
-│   └── lib/automation-state.mjs # Shared run-state tracking
-├── .github/workflows/           # CI pipelines
-├── jenkins-agent/, jenkins-config.xml
+│   ├── auto-heal.mjs              # TypeScript/JS syntax auto-fixer (pre-test gate)
+│   ├── heal-locators.mjs          # Locator-failure healer, verified by re-run
+│   ├── pipeline.mjs               # End-to-end orchestrator (run -> classify -> heal -> report)
+│   ├── detect-flaky-tests.mjs     # Flaky candidate detection
+│   ├── analyze-results.mjs        # AI RCA / failure analysis
+│   └── lib/
+│       └── automation-state.mjs   # Shared run-state tracking
+│
+├── .github/
+│   └── workflows/                 # GitHub Actions CI pipelines
+│
+├── jenkins-agent/                 # Jenkins agent config
+├── jenkins-config.xml
+│
+├── allure-results/
+├── allure-report/
+│
 ├── global-setup.ts
 ├── playwright.config.ts
-└── package.json
+├── tsconfig.json
+├── package.json
+└── README.md
 ```
 
 ---
