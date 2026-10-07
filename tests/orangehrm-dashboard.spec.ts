@@ -7,6 +7,7 @@ import {
 } from '../pages/OrangeHrmLoginPage.js';
 
 test.use({
+  locale: 'en-US',
   storageState: { cookies: [], origins: [] },
 });
 
