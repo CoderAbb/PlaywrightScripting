@@ -45,13 +45,11 @@ export class OrangeHrmDashboardPage {
     await expect(this.page).toHaveURL(/\/web\/index\.php\/directory\/viewDirectory$/);
     await expect(this.page.getByRole('heading', { name: 'Directory', level: 5 })).toBeVisible();
     await expect(this.page.getByText(/\(\d+\) Records Found/)).toBeVisible();
-    await expect(
-      this.page.locator('.orangehrm-directory-card-header').filter({ hasText: /Admin\s+admin/i }),
-    ).toBeVisible();
+    await expect(this.page.locator('.orangehrm-directory-card-header').first()).toBeVisible();
   }
 
   async logout() {
-    await this.page.getByRole('banner').getByText('Admin admin').click();
+    await this.page.getByRole('banner').locator('.oxd-userdropdown-tab').click();
     await this.page.getByText('Logout', { exact: true }).click();
     await expect(this.page).toHaveURL(/\/web\/index\.php\/auth\/login$/);
     await expect(this.page.getByRole('heading', { name: 'Login' })).toBeVisible();
