@@ -132,6 +132,14 @@ The dashboard shows total tests, pass rate, a timeout/assertion failure breakdow
 root-cause table per failure (category, confidence, diagnosis, recommendation), and the current
 flaky-candidate list.
 
+<img width="1412" height="802" alt="Screenshot 2026-10-06 at 10 46 49 PM" src="https://github.com/user-attachments/assets/16405c2b-2507-43be-af8a-a389b976561a" />
+<img width="1406" height="685" alt="Screenshot 2026-10-06 at 10 47 11 PM" src="https://github.com/user-attachments/assets/4c47a277-4915-44f8-a9e9-bf8cd1e20a5f" />
+<img width="1406" height="607" alt="Screenshot 2026-10-06 at 10 47 24 PM" src="https://github.com/user-attachments/assets/8e939fdd-1ae7-43a4-b308-179713caaa94" />
+<img width="1399" height="574" alt="Screenshot 2026-10-06 at 10 47 38 PM" src="https://github.com/user-attachments/assets/872a3fb9-669b-4eaf-8911-69ac908496d2" />
+
+
+
+
 ---
 
 ## 📦 Recommended VS Code Extensions
