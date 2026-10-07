@@ -12,8 +12,10 @@ what's safe to auto-fix, and flags what isn't — with a live dashboard showing 
 
 ✔ Playwright Test Runner with TypeScript, cross-browser (Chromium, Firefox, WebKit)
 ✔ Structured test flows (login → shop → cart → checkout) with modern selectors (`getByRole`, `getByTestId`, `getByText`)
-✔ **AI-powered failure triage** — every failure is classified (timeout vs. assertion) and diagnosed with a confidence score and a recommendation
-✔ **Self-healing CI** — syntax/type errors and broken locators are auto-fixed and verified; genuine behavior regressions are never auto-fixed, only flagged for human review
+✔ **AI-powered failure triage** — every failure is classified (timeout vs. assertion) and diagnosed with a confidence score and a
+recommendation
+✔ **Self-healing CI** — syntax/type errors and broken locators are auto-fixed and verified; genuine behavior regressions are never auto
+fixed, only flagged for human review
 ✔ **Flaky test detection** — tests that fail then pass on retry are surfaced as flaky candidates, not silently ignored
 ✔ **AI Test Intelligence dashboard** — pass rate, failure breakdown, RCA table, and flaky candidates in one view
 ✔ CI integration for both GitHub Actions and Jenkins
