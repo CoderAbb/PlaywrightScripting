@@ -6,6 +6,11 @@ Started as a straightforward Playwright + TypeScript automation project and has 
 self-healing test framework: it runs your suite, classifies *why* each test failed, auto-fixes
 what's safe to auto-fix, and flags what isn't — with a live dashboard showing the full picture.
 
+[![Auto-Heal](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/auto-heal.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/auto-heal.yml)
+[![Flaky Test Detection](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml)
+[![Playwright Tests](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml)
+[![CodeQL - Code Quality](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-quality/codeql/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-quality/codeql)
+
 ---
 
 ## 🚀 What this is
