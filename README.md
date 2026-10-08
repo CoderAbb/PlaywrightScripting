@@ -2,7 +2,7 @@
 
 **AI-orchestrated end-to-end test automation with Playwright, TypeScript, and LangGraph.**
 
-[![Flaky Test Detection](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml)(https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/pipeline.yml)
+[![Flaky Test Detection](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml)
 ![Playwright](https://img.shields.io/badge/Playwright-45ba4b?logo=playwright&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?logo=typescript&logoColor=white)
 ![Self-Healing](https://img.shields.io/badge/self--healing-AI%20powered-8A2BE2)
