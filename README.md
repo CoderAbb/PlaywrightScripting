@@ -2,14 +2,16 @@
 
 **AI-orchestrated end-to-end test automation with Playwright, TypeScript, and LangGraph.**
 
+[![AI Test Pipeline](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/pipeline.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/pipeline.yml)
+![Playwright](https://img.shields.io/badge/Playwright-45ba4b?logo=playwright&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?logo=typescript&logoColor=white)
+![Self-Healing](https://img.shields.io/badge/self--healing-AI%20powered-8A2BE2)
+
+![AI Test Intelligence dashboard](docs/dashboard.png)
+
 Started as a straightforward Playwright + TypeScript automation project and has grown into a
 self-healing test framework: it runs your suite, classifies *why* each test failed, auto-fixes
 what's safe to auto-fix, and flags what isn't — with a live dashboard showing the full picture.
-
-[![Auto-Heal](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/auto-heal.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/auto-heal.yml)
-[![Flaky Test Detection](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml)
-[![Playwright Tests](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/playwright.yml)
-[![CodeQL - Code Quality](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-quality/codeql/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-quality/codeql)
 
 ---
 
@@ -17,10 +19,8 @@ what's safe to auto-fix, and flags what isn't — with a live dashboard showing 
 
 ✔ Playwright Test Runner with TypeScript, cross-browser (Chromium, Firefox, WebKit)
 ✔ Structured test flows (login → shop → cart → checkout) with modern selectors (`getByRole`, `getByTestId`, `getByText`)
-✔ **AI-powered failure triage** — every failure is classified (timeout vs. assertion) and diagnosed with a confidence score and a
-recommendation
-✔ **Self-healing CI** — syntax/type errors and broken locators are auto-fixed and verified; genuine behavior regressions are never auto
-fixed, only flagged for human review
+✔ **AI-powered failure triage** — every failure is classified (timeout vs. assertion) and diagnosed with a confidence score and a recommendation
+✔ **Self-healing CI** — syntax/type errors and broken locators are auto-fixed and verified; genuine behavior regressions are never auto-fixed, only flagged for human review
 ✔ **Flaky test detection** — tests that fail then pass on retry are surfaced as flaky candidates, not silently ignored
 ✔ **AI Test Intelligence dashboard** — pass rate, failure breakdown, RCA table, and flaky candidates in one view
 ✔ CI integration for both GitHub Actions and Jenkins
@@ -136,14 +136,6 @@ npx playwright test --trace on && npx playwright show-trace trace.zip
 The dashboard shows total tests, pass rate, a timeout/assertion failure breakdown, an AI-generated
 root-cause table per failure (category, confidence, diagnosis, recommendation), and the current
 flaky-candidate list.
-
-<img width="1412" height="802" alt="Screenshot 2026-10-06 at 10 46 49 PM" src="https://github.com/user-attachments/assets/16405c2b-2507-43be-af8a-a389b976561a" />
-<img width="1406" height="685" alt="Screenshot 2026-10-06 at 10 47 11 PM" src="https://github.com/user-attachments/assets/4c47a277-4915-44f8-a9e9-bf8cd1e20a5f" />
-<img width="1406" height="607" alt="Screenshot 2026-10-06 at 10 47 24 PM" src="https://github.com/user-attachments/assets/8e939fdd-1ae7-43a4-b308-179713caaa94" />
-<img width="1399" height="574" alt="Screenshot 2026-10-06 at 10 47 38 PM" src="https://github.com/user-attachments/assets/872a3fb9-669b-4eaf-8911-69ac908496d2" />
-
-
-
 
 ---
 
