@@ -140,7 +140,7 @@ flaky-candidate list.
 
 ---
 
-## 📦 Recommended VS Code Extensions
+## Recommended VS Code Extensions
 
 - Playwright Test for VS Code
 - ESLint
@@ -148,7 +148,7 @@ flaky-candidate list.
 
 ---
 
-## 🗺 Roadmap
+## Roadmap
 
 - [ ] Quarantine tests that stay flaky across N consecutive runs instead of re-healing every time
 - [ ] Wire the dashboard's "Investigate" action to open the relevant trace file
