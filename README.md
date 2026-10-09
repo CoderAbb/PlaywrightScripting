@@ -1,4 +1,4 @@
-# 📘 PlaywrightScripting
+# PlaywrightScripting
 
 **AI-orchestrated end-to-end test automation with Playwright, TypeScript, and LangGraph.**
 
@@ -16,7 +16,7 @@ what's safe to auto-fix, and flags what isn't — with a live dashboard showing 
 
 ---
 
-## 🚀 What this is
+## What this is
 
 ✔ Playwright Test Runner with TypeScript, cross-browser (Chromium, Firefox, WebKit)
 ✔ Structured test flows (login → shop → cart → checkout) with modern selectors (`getByRole`, `getByTestId`, `getByText`)
@@ -29,7 +29,7 @@ what's safe to auto-fix, and flags what isn't — with a live dashboard showing 
 
 ---
 
-## 🧠 How the self-healing pipeline works
+## How the self-healing pipeline works
 
 Three categories of "broken," three different responses:
 
@@ -44,7 +44,7 @@ suite, classifies every failure, applies the safe fixes, and tells you exactly w
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 PlaywrightScripting/
@@ -80,7 +80,7 @@ PlaywrightScripting/
 
 ---
 
-## 🛠 Installation
+## Installation
 
 Requires Node.js 18+.
 
@@ -99,7 +99,7 @@ export ANTHROPIC_API_KEY=sk-...
 
 ---
 
-## ▶️ Running Tests
+## Running Tests
 
 ```bash
 npx playwright test                          # full suite
@@ -107,7 +107,7 @@ npx playwright test --headed                  # headed mode
 npx playwright test tests/checkout.spec.ts     # a specific spec
 ```
 
-## 🩺 Running the self-healing pipeline
+## Running the self-healing pipeline
 
 ```bash
 npm run pipeline              # run, classify, auto-heal, report
@@ -126,7 +126,7 @@ npm run flaky                 # detect flaky candidates (needs --retries on the 
 npm run intelligence          # analyze + render the dashboard
 ```
 
-## 📊 Dashboard & Reports
+## Dashboard & Reports
 
 ```bash
 npm run dashboard             # render the AI Test Intelligence dashboard
