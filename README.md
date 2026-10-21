@@ -134,9 +134,11 @@ npx playwright show-report    # standard Playwright HTML report
 npx playwright test --trace on && npx playwright show-trace trace.zip
 ```
 
-The dashboard shows total tests, pass rate, a timeout/assertion failure breakdown, an AI-generated
-root-cause table per failure (category, confidence, diagnosis, recommendation), and the current
-flaky-candidate list.
+The dashboard shows total tests, pass rate, and AI-generated failure diagnoses with category,
+confidence, and recommendations. Its **Recommended Next Steps** section groups failures by type,
+explains whether auto-heal is appropriate, and provides copyable commands to preview safe locator
+repairs or inspect failures that need manual review. Assertion mismatches are never recommended
+for auto-healing. Flaky candidates are listed separately for stability follow-up.
 
 ---
 
