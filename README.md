@@ -9,6 +9,8 @@
 [![CodeQL](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-scanning/codeql)
 
 ![AI Test Intelligence dashboard](docs/dashboard.png)
+<img width="1422" height="321" alt="Screenshot 2026-10-21 at 4 56 46 PM" src="https://github.com/user-attachments/assets/4dd104b2-ce25-4f5e-99b5-7d83300841c3" />
+
 
 Started as a straightforward Playwright + TypeScript automation project and has grown into a
 self-healing test framework: it runs your suite, classifies *why* each test failed, auto-fixes
