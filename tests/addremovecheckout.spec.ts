@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { test } from '../fixtures.js';
 import {
   TEST_EMAIL,
   CHECKOUT_FIRST_NAME,
@@ -10,16 +10,17 @@ import {
 import { ToolshopProductPage } from '../pages/ToolshopProductPage.js';
 import { ToolshopCartPage } from '../pages/ToolshopCartPage.js';
 import { ToolshopCheckoutPage } from '../pages/ToolshopCheckoutPage.js';
+import { QA_BASE_URL } from '../pages/LoginPage.js';
 
 test.describe('AutomationLabs', () => {
   test('homepageLink @homepage', async ({ page }) => {
-    await page.goto('https://qaautomationlabs.com');
+    await page.goto(QA_BASE_URL);
     await page.getByRole('link', { name: 'Home' }).first().click();
   });
 
-  test('loginPage @login', async ({ page }) => {
-    await page.goto('https://shop.qaautomationlabs.com');
-    await page.waitForLoadState('domcontentloaded');
+  test('loginPage @login', async ({ loginPage }) => {
+    await loginPage.openShop();
+    await loginPage.expectShopLoaded();
   });
 
   test('ShoppingCart @shoppingcart', async ({ page }) => {
@@ -53,4 +54,3 @@ test.describe('AutomationLabs', () => {
     await checkoutPage.expectPaymentSuccess();
   });
 });
-

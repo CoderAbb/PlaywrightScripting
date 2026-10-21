@@ -1,6 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { PRACTICE_SITE_URL } from '../global-setup.js';
-
+import { PRACTICE_SITE_URL } from './LoginPage.js';
 
 export class ToolshopCartPage {
   constructor(private page: Page) {}

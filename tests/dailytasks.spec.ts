@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { TODO_URL } from '../config/urls.js';
+import { TODO_URL } from '../pages/LoginPage.js';
 
 const inputLocator = (page: Page) => page.getByTestId('text-input');
 const todoItemToggle = (page: Page, text: string) =>
