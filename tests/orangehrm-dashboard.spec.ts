@@ -1,18 +1,19 @@
-import { test } from '@playwright/test';
+import { test } from '../fixtures.js';
 import { OrangeHrmDashboardPage } from '../pages/OrangeHrmDashboardPage.js';
 import {
   INVALID_CREDENTIALS,
-  OrangeHrmLoginPage,
   VALID_CREDENTIALS,
-} from '../pages/OrangeHrmLoginPage.js';
+} from '../pages/LoginPage.js';
 
 test.use({
   locale: 'en-US',
   storageState: { cookies: [], origins: [] },
 });
 
-test('admin can log in and view the OrangeHRM dashboard', async ({ page }) => {
-  const loginPage = new OrangeHrmLoginPage(page);
+test('admin can log in and view the OrangeHRM dashboard', async ({
+  page,
+  orangeHrmLoginPage: loginPage,
+}) => {
   const dashboardPage = new OrangeHrmDashboardPage(page);
 
   await loginPage.open();
@@ -24,16 +25,18 @@ test('admin can log in and view the OrangeHRM dashboard', async ({ page }) => {
   await dashboardPage.expectQuickActionsVisible();
 });
 
-test('invalid credentials keep the user on the login page', async ({ page }) => {
-  const loginPage = new OrangeHrmLoginPage(page);
-
+test('invalid credentials keep the user on the login page', async ({
+  orangeHrmLoginPage: loginPage,
+}) => {
   await loginPage.open();
   await loginPage.login(INVALID_CREDENTIALS);
   await loginPage.expectInvalidCredentialsError();
 });
 
-test('admin can open PIM from the dashboard and return to the dashboard', async ({ page }) => {
-  const loginPage = new OrangeHrmLoginPage(page);
+test('admin can open PIM from the dashboard and return to the dashboard', async ({
+  page,
+  orangeHrmLoginPage: loginPage,
+}) => {
   const dashboardPage = new OrangeHrmDashboardPage(page);
 
   await loginPage.open();
@@ -44,8 +47,10 @@ test('admin can open PIM from the dashboard and return to the dashboard', async 
   await dashboardPage.returnToDashboard();
 });
 
-test('admin can view employee records in Directory', async ({ page }) => {
-  const loginPage = new OrangeHrmLoginPage(page);
+test('admin can view employee records in Directory', async ({
+  page,
+  orangeHrmLoginPage: loginPage,
+}) => {
   const dashboardPage = new OrangeHrmDashboardPage(page);
 
   await loginPage.open();
@@ -55,8 +60,10 @@ test('admin can view employee records in Directory', async ({ page }) => {
   await dashboardPage.openDirectory();
 });
 
-test('admin can log out from the profile menu', async ({ page }) => {
-  const loginPage = new OrangeHrmLoginPage(page);
+test('admin can log out from the profile menu', async ({
+  page,
+  orangeHrmLoginPage: loginPage,
+}) => {
   const dashboardPage = new OrangeHrmDashboardPage(page);
 
   await loginPage.open();

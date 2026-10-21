@@ -3,8 +3,19 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 
 import { AUTH_FILE } from './global-setup.js';
+import { LoginPage, OrangeHrmLoginPage } from './pages/LoginPage.js';
 
-export const test = base.extend<{ authenticatedPage: Page }>({
+export const test = base.extend<{
+  authenticatedPage: Page;
+  loginPage: LoginPage;
+  orangeHrmLoginPage: OrangeHrmLoginPage;
+}>({
+  loginPage: async ({ page }, use) => {
+    await use(new LoginPage(page));
+  },
+  orangeHrmLoginPage: async ({ page }, use) => {
+    await use(new OrangeHrmLoginPage(page));
+  },
   authenticatedPage: async ({ browser }, use) => {
     let storageState: unknown = { cookies: [], origins: [] };
 

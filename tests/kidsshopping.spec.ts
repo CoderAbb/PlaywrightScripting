@@ -1,10 +1,11 @@
-import { test, expect } from '@playwright/test';
-import { SHOP_BASE_URL } from '../config/urls.js';
+import { expect } from '@playwright/test';
+import { test } from '../fixtures.js';
+import { SHOP_BASE_URL } from '../pages/LoginPage.js';
 import { TEST_EMAIL, CHECKOUT_KIDS_FIRST_NAME, CHECKOUT_KIDS_LAST_NAME, CHECKOUT_KIDS_PHONE, CHECKOUT_KIDS_ADDRESS, CHECKOUT_KIDS_CITY, CHECKOUT_KIDS_STATE, CHECKOUT_KIDS_POST_CODE } from '../config/testData.js';
 
-test('kids shopping @Kidsshopping', async ({ page }) => {
-  await page.goto(SHOP_BASE_URL);
-  await expect(page.locator('body')).toContainText(/shop|products|cart/i);
+test('kids shopping @Kidsshopping', async ({ page, loginPage }) => {
+  await loginPage.openShop();
+  await loginPage.expectShopLoaded();
 
   await page.goto(`${SHOP_BASE_URL}/kids-wear.php`);
   await page.locator('button').filter({ hasText: /add to cart/i }).first().click();

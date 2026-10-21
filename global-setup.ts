@@ -1,14 +1,7 @@
 import { chromium } from '@playwright/test';
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
-
-export const QA_BASE_URL = 'https://qaautomationlabs.com';
-export const SHOP_BASE_URL = 'https://shop.qaautomationlabs.com';
-export const PRACTICE_SITE_URL = 'https://practicesoftwaretesting.com';
-export const LAMBDA_ECOM_URL = 'https://ecommerce-playground.lambdatest.io';
-export const RAHUL_SHETTY_URL = 'https://rahulshettyacademy.com/seleniumPractise/#/';
-export const PLAYWRIGHT_URL = 'https://playwright.dev/';
-export const TODO_URL = 'https://todomvc.com/examples/react/dist/';
+import { SHOP_BASE_URL } from './pages/LoginPage.js';
 
 export const TEST_EMAIL = 'test@gmail.com';
 export const CHECKOUT_FIRST_NAME = 'Test';
