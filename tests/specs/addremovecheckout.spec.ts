@@ -6,11 +6,11 @@ import {
   CHECKOUT_CITY,
   CHECKOUT_STATE,
   CHECKOUT_POST_CODE,
-} from '../config/testData.js';
-import { ToolshopProductPage } from '../pages/ToolshopProductPage.js';
-import { ToolshopCartPage } from '../pages/ToolshopCartPage.js';
-import { ToolshopCheckoutPage } from '../pages/ToolshopCheckoutPage.js';
-import { QA_BASE_URL } from '../pages/LoginPage.js';
+} from '../../config/testData.js';
+import { ToolshopProductPage } from '../../pages/ToolshopProductPage.js';
+import { ToolshopCartPage } from '../../pages/ToolshopCartPage.js';
+import { ToolshopCheckoutPage } from '../../pages/ToolshopCheckoutPage.js';
+import { QA_BASE_URL } from '../../config/urls.js';
 
 test.describe('AutomationLabs', () => {
   test('homepageLink @homepage', async ({ page }) => {

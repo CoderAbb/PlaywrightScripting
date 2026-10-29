@@ -1,9 +1,9 @@
 import { test } from '../fixtures.js';
-import { OrangeHrmDashboardPage } from '../pages/OrangeHrmDashboardPage.js';
+import { OrangeHrmDashboardPage } from '../../pages/OrangeHrmDashboardPage.js';
 import {
   INVALID_CREDENTIALS,
   VALID_CREDENTIALS,
-} from '../pages/LoginPage.js';
+} from '../../pages/LoginPage.js';
 
 test.use({
   locale: 'en-US',

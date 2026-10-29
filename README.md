@@ -41,8 +41,8 @@ Three categories of "broken," three different responses:
 | **Locator-class failure** | `locator.click: Timeout 10000ms exceeded` | Auto-fixed by `heal-locators.mjs` using a role → testid → label → text priority ladder, then the spec is re-run to confirm the fix actually works |
 | **Assertion-class failure** | App returned a value different from what the test expected | **Never auto-fixed.** This might mean the app's behavior genuinely changed — "fixing" the assertion could silently hide a real regression. Instead it's written to a `reports/needs-human-review-*.md` file for manual review |
 
-The orchestrator that chains all of this together is `scripts/pipeline.mjs` — one command that runs the
-suite, classifies every failure, applies the safe fixes, and tells you exactly what still needs eyes on it.
+The LangGraph runner in `graph/automationGraph.mjs` coordinates the existing healing scripts without
+reimplementing them.
 
 ---
 
@@ -51,29 +51,27 @@ suite, classifies every failure, applies the safe fixes, and tells you exactly w
 ```
 PlaywrightScripting/
 ├── tests/
-│   ├── checkout.spec.ts
-│   ├── newtest.spec.ts
-│   └── flaky.spec.ts
-│
+│   ├── fixtures.ts
+│   ├── global-setup.ts
+│   ├── login-agent.test.mjs
+│   └── specs/
+│       └── *.spec.ts
+├── pages/                         # Page objects
+├── config/
+│   ├── testData.ts                # Shared test data
+│   └── urls.ts                    # Site URLs
 ├── scripts/
-│   ├── auto-heal.mjs              # TypeScript/JS syntax auto-fixer (pre-test gate)
-│   ├── heal-locators.mjs          # Locator-failure healer, verified by re-run
-│   ├── pipeline.mjs               # End-to-end orchestrator (run -> classify -> heal -> report)
-│   ├── detect-flaky-tests.mjs     # Flaky candidate detection
-│   ├── analyze-results.mjs        # AI RCA / failure analysis
-│   └── lib/
-│       └── automation-state.mjs   # Shared run-state tracking
-│
-├── .github/
-│   └── workflows/                 # GitHub Actions CI pipelines
-│
+│   ├── auto-heal.mjs
+│   ├── heal-locators.mjs
+│   ├── detect-flaky-tests.mjs
+│   ├── analyze-results.mjs
+│   └── lib/                       # Shared automation and flaky-test utilities
+├── graph/                         # LangGraph automation and analysis
+├── .github/workflows/             # GitHub Actions workflows
 ├── jenkins-agent/                 # Jenkins agent config
 ├── jenkins-config.xml
-│
-├── allure-results/
-├── allure-report/
-│
-├── global-setup.ts
+├── login-agent.mjs
+├── login-agent.ts
 ├── playwright.config.ts
 ├── tsconfig.json
 ├── package.json
@@ -106,15 +104,14 @@ export ANTHROPIC_API_KEY=sk-...
 ```bash
 npx playwright test                          # full suite
 npx playwright test --headed                  # headed mode
-npx playwright test tests/checkout.spec.ts     # a specific spec
+npx playwright test tests/specs/checkout.spec.ts # a specific spec
 ```
 
-## Running the self-healing pipeline
+## Running the self-healing orchestrator
 
 ```bash
-npm run pipeline              # run, classify, auto-heal, report
-npm run pipeline:dry-run      # same, but don't write any fixes
-npm run pipeline:pr           # auto-heal, then open a PR instead of committing locally
+npm run orchestrate           # run the LangGraph healing workflow
+npm run orchestrate:pr        # allow healing scripts to open pull requests
 ```
 
 Individual pieces can also be run on their own:

@@ -1,5 +1,4 @@
 import { defineConfig, devices } from '@playwright/test';
-import globalSetup from './global-setup.js';
 
 /**
  * Read environment variables from file.
@@ -14,7 +13,7 @@ import globalSetup from './global-setup.js';
  */
 export default defineConfig({
 
-  globalSetup: './global-setup.ts',
+  globalSetup: './tests/global-setup.ts',
 
   testDir: './tests',
   /* Run tests in files in parallel */
