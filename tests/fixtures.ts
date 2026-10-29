@@ -3,7 +3,7 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 
 import { AUTH_FILE } from './global-setup.js';
-import { LoginPage, OrangeHrmLoginPage } from './pages/LoginPage.js';
+import { LoginPage, OrangeHrmLoginPage } from '../pages/LoginPage.js';
 
 export const test = base.extend<{
   authenticatedPage: Page;

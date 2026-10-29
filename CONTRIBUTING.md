@@ -22,12 +22,12 @@ npx playwright test
 
 ## Project conventions
 
-- **Page objects** live under `tests/` and should follow the existing
+- **Page objects** live under `pages/` and should follow the existing
   prioritized-selector pattern (role/text-based selectors first, CSS/XPath
   as a fallback) rather than brittle raw selectors.
 - **New specs** should be self-contained and not depend on execution order.
 - **Auth/session state** must never be committed — it's covered by
-  `.gitignore` for a reason (see `global-setup.ts` for how sessions are
+  `.gitignore` for a reason (see `tests/global-setup.ts` for how sessions are
   generated per run).
 - **TypeScript**: keep strict typing; avoid `any` unless interfacing with an
   untyped third-party API.

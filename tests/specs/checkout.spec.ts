@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { LAMBDA_ECOM_URL } from '../pages/LoginPage.js';
-import { TEST_EMAIL, CHECKOUT_FIRST_NAME, CHECKOUT_LAST_NAME, CHECKOUT_ADDRESS, CHECKOUT_CITY, CHECKOUT_POST_CODE, CHECKOUT_PHONE } from '../config/testData.js';
+import { LAMBDA_ECOM_URL } from '../../config/urls.js';
+import { TEST_EMAIL, CHECKOUT_FIRST_NAME, CHECKOUT_LAST_NAME, CHECKOUT_ADDRESS, CHECKOUT_CITY, CHECKOUT_POST_CODE, CHECKOUT_PHONE } from '../../config/testData.js';
 
 type GuestInfo = {
   firstName: string;

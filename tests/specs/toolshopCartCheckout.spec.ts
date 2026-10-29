@@ -6,10 +6,10 @@ import {
   CHECKOUT_CITY,
   CHECKOUT_STATE,
   CHECKOUT_POST_CODE,
-} from '../config/testData.js';
-import { ToolshopProductPage } from '../pages/ToolshopProductPage.js';
-import { ToolshopCartPage } from '../pages/ToolshopCartPage.js';
-import { ToolshopCheckoutPage } from '../pages/ToolshopCheckoutPage.js';
+} from '../../config/testData.js';
+import { ToolshopProductPage } from '../../pages/ToolshopProductPage.js';
+import { ToolshopCartPage } from '../../pages/ToolshopCartPage.js';
+import { ToolshopCheckoutPage } from '../../pages/ToolshopCheckoutPage.js';
 test('add items to cart, guest checkout, and place order @toolshop-checkout', async ({ page }) => {
   const productPage = new ToolshopProductPage(page);
   const cartPage = new ToolshopCartPage(page);

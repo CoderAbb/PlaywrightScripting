@@ -1,30 +1,7 @@
 import { chromium } from '@playwright/test';
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
-import { SHOP_BASE_URL } from './pages/LoginPage.js';
-
-export const TEST_EMAIL = 'test@gmail.com';
-export const CHECKOUT_FIRST_NAME = 'Test';
-export const CHECKOUT_LAST_NAME = 'User';
-export const CHECKOUT_PHONE = '1234567890';
-export const CHECKOUT_ADDRESS = '123 Straight Street';
-export const CHECKOUT_CITY = 'Dallas';
-export const CHECKOUT_STATE = 'Texas';
-export const CHECKOUT_POST_CODE = '75001';
-export const CHECKOUT_GUEST_FIRST_NAME = 'testfirst';
-export const CHECKOUT_GUEST_LAST_NAME = 'testlast';
-export const CHECKOUT_ELECTRONICS_PHONE = '9098726735';
-export const CHECKOUT_ELECTRONICS_ADDRESS = '1234 test street';
-export const CHECKOUT_ELECTRONICS_STATE = 'Michigan';
-export const CHECKOUT_ELECTRONICS_CITY = 'Troy';
-export const CHECKOUT_ELECTRONICS_POST_CODE = '78234';
-export const CHECKOUT_KIDS_FIRST_NAME = 'Testname';
-export const CHECKOUT_KIDS_LAST_NAME = 'Testlastname';
-export const CHECKOUT_KIDS_PHONE = '9726635421';
-export const CHECKOUT_KIDS_ADDRESS = '2890 Spring Drive';
-export const CHECKOUT_KIDS_CITY = 'Troy';
-export const CHECKOUT_KIDS_STATE = 'MI';
-export const CHECKOUT_KIDS_POST_CODE = '89283';
+import { SHOP_BASE_URL } from '../config/urls.js';
 
 const authDir = path.join(process.cwd(), '.auth');
 export const AUTH_DIR = authDir;
