@@ -8,11 +8,11 @@
 [![Flaky Test Detection](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/flaky-detection.yml)
 [![CodeQL](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/CoderAbb/PlaywrightScripting/actions/workflows/github-code-scanning/codeql)
 
-<img width="1393" height="795" alt="Screenshot 2026-11-05 at 5 23 58 PM" src="https://github.com/user-attachments/assets/9dff1c15-9e61-4532-bfda-1f893605841a" />
-
 Started as a straightforward Playwright + TypeScript automation project and has grown into a
 self-healing test framework: it runs your suite, classifies *why* each test failed, auto-fixes
 what's safe to auto-fix, and flags what isn't — with a live dashboard showing the full picture.
+
+<img width="1393" height="795" alt="Screenshot 2026-11-05 at 5 23 58 PM" src="https://github.com/user-attachments/assets/9dff1c15-9e61-4532-bfda-1f893605841a" />
 
 ---
 
