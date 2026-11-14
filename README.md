@@ -137,6 +137,15 @@ explains whether auto-heal is appropriate, and provides copyable commands to pre
 repairs or inspect failures that need manual review. Assertion mismatches are never recommended
 for auto-healing. Flaky candidates are listed separately for stability follow-up.
 
+Playwright also retains a trace and video for failed tests (alongside the failure screenshot) under
+`test-results/`. To inspect a trace, open the test's `trace.zip` with:
+
+```bash
+npx playwright show-trace test-results/<test-folder>/trace.zip
+```
+
+Successful tests do not retain video or trace files, keeping routine run artifacts smaller.
+
 ---
 
 ## Recommended VS Code Extensions
