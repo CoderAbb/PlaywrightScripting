@@ -44,10 +44,10 @@ reporter: [
     navigationTimeout: 30_000,
     actionTimeout: 10_000,
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    /* Retain diagnostics for failed tests. See https://playwright.dev/docs/trace-viewer */
     screenshot: 'only-on-failure',
-    video: 'off',
-    trace: 'off'
+    video: 'retain-on-failure',
+    trace: 'retain-on-failure'
   },
 
   /* Configure projects for major browsers */
