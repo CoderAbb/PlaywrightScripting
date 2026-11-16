@@ -36,11 +36,20 @@ Three categories of "broken," three different responses:
 | Failure type | Example | What happens |
 |---|---|---|
 | **Syntax / type error** | A `.ts`/`.mjs` file doesn't compile | Auto-fixed by `auto-heal.mjs`, re-verified, before tests even run |
-| **Locator-class failure** | `locator.click: Timeout 10000ms exceeded` | Auto-fixed by `heal-locators.mjs` using a role → testid → label → text priority ladder, then the spec is re-run to confirm the fix actually works |
-| **Assertion-class failure** | App returned a value different from what the test expected | **Never auto-fixed.** This might mean the app's behavior genuinely changed — "fixing" the assertion could silently hide a real regression. Instead it's written to a `reports/needs-human-review-*.md` file for manual review |
+| **Locator-class failure** | `locator.click: Timeout 10000ms exceeded` | Auto-fixed by `heal-locators.mjs` using a role → testid → label → text priority ladder, then the spec is re-run to confirm the fix |
+| **Assertion-class failure** | App returned a value different from what the test expected | **Never auto-fixed.** This might mean the app's behavior genuinely changed — "fixing" the assertion could hide a real bug |
 
 The LangGraph runner in `graph/automationGraph.mjs` coordinates the existing healing scripts without
 reimplementing them.
+
+---
+
+## AI-Augmented Quality Engineering Architecture
+
+Explore how Playwright, LangGraph agents, AutoHeal,
+and BISO Quality Intelligence work together.
+
+[View the architecture](docs/architecture/ai-augmented-playwright-quality-engineering.md)
 
 ---
 
