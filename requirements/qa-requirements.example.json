@@ -1,0 +1,25 @@
+{
+  "name": "Playwright Demo smoke coverage",
+  "requirements": [
+    {
+      "id": "REQ-DOCS-001",
+      "description": "The Playwright documentation page has a Playwright title.",
+      "tests": [
+        {
+          "file": "tests/specs/demo.spec.ts",
+          "title": "hastitle @title"
+        }
+      ]
+    },
+    {
+      "id": "REQ-DOCS-002",
+      "description": "A user can open the Get started documentation and see Installation.",
+      "tests": [
+        {
+          "file": "tests/specs/demo.spec.ts",
+          "title": "getstarted @link"
+        }
+      ]
+    }
+  ]
+}

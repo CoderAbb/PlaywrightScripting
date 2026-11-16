@@ -23,6 +23,7 @@
     "report:agent-inspect": "npx allure agent inspect allure-results",
     "orchestrate": "node ./graph/automationGraph.mjs",
     "orchestrate:pr": "node ./graph/automationGraph.mjs --pr",
+    "qa:pipeline": "node ./graph/qaPipeline.mjs",
     "analyze": "node ./scripts/analyze-results.mjs",
     "flaky": "node ./scripts/detect-flaky-tests.mjs",
     "flaky:quarantine": "node ./scripts/detect-flaky-tests.mjs --quarantine",

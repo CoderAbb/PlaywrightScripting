@@ -112,6 +112,37 @@ npm run orchestrate           # run the LangGraph healing workflow
 npm run orchestrate:pr        # allow healing scripts to open pull requests
 ```
 
+## Running the requirement-to-report QA pipeline
+
+The LangGraph QA pipeline connects requirements to existing Playwright specs and then executes,
+validates, diagnoses, and reports the run. Each requirement maps to exact test titles and spec
+paths; it does not invent assertions or modify your specs. The pipeline has local, deterministic
+agents and does not require an AI API key.
+
+```bash
+npm run qa:pipeline -- --requirements requirements/qa-requirements.example.json --project chromium
+npm run qa:pipeline -- --requirements requirements/qa-requirements.example.json --plan-only
+```
+
+The requirements JSON contains a name, requirement IDs and descriptions, and one or more mapped
+tests per requirement. Copy the example file and replace the sample requirements and test mappings.
+Spec paths must stay under `tests/`, and test titles must exactly match the Playwright test title.
+
+The pipeline runs these stages in order:
+
+1. Requirement analysis validates the input and mapped tests.
+2. Test planning expands the requirement-to-test mappings.
+3. Test-case generation writes `reports/qa-test-plan.json`.
+4. Automation validates spec paths and selects the mapped spec files.
+5. Execution runs Playwright against those spec files (optionally in one project).
+6. Validation compares every mapped test against its executions.
+7. Bug analysis reuses the existing failure classifier and RCA graph.
+8. Reporting writes `reports/qa-pipeline.json` and refreshes the existing intelligence dashboard.
+
+`--plan-only` validates the requirements and emits the test plan without starting browsers or
+refreshing reports from an earlier run. A normal run writes the Playwright results to
+`test-results/results.json`; the JSON and HTML intelligence outputs remain under `reports/`.
+
 Individual pieces can also be run on their own:
 
 ```bash
