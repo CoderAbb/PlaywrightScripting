@@ -12,32 +12,30 @@ Started as a straightforward Playwright + TypeScript automation project and has 
 self-healing test framework: it runs your suite, classifies *why* each test failed, auto-fixes
 what's safe to auto-fix, and flags what isn't — with a live dashboard showing the full picture.
 
-<img width="1393" height="795" alt="Screenshot 2026-11-05 at 5 23 58 PM" src="https://github.com/user-attachments/assets/9dff1c15-9e61-4532-bfda-1f893605841a" />
+<img width="1393" height="795" alt="Screenshot 2026-11-05 at 5 23 58 PM" src="https://github.com/user-attachments/assets/9dff1c15-9e61-4532-bfda-1f893605841a" />
 
 ---
 
 ## What this is
 
-✔ Playwright Test Runner with TypeScript, cross-browser (Chromium, Firefox, WebKit)
-✔ Structured test flows (login → shop → cart → checkout) with modern selectors (`getByRole`, `getByTestId`, `getByText`)
-✔ **AI-powered failure triage** — every failure is classified (timeout vs. assertion) and diagnosed with a confidence score and a recommendation
-✔ **Self-healing CI** — syntax/type errors and broken locators are auto-fixed and verified; genuine behavior regressions are never auto-fixed, only flagged for human review
-✔ **Flaky test detection** — tests that fail then pass on retry are surfaced as flaky candidates, not silently ignored
-✔ **AI Test Intelligence dashboard** — pass rate, failure breakdown, RCA table, and flaky candidates in one view
-✔ CI integration for both GitHub Actions and Jenkins
-✔ HTML reports, Allure reporting, and full trace viewer support
+✔ Playwright Test Runner with TypeScript, cross-browser (Chromium, Firefox, WebKit)  
+✔ Structured test flows (login → shop → cart → checkout) with modern selectors (`getByRole`, `getByTestId`, `getByText`)  
+✔ **AI-powered failure triage** — failures are classified and diagnosed with confidence scores and recommendations  
+✔ **Self-healing CI** — syntax/type errors and broken locators are auto-fixed and verified; behavior regressions are flagged for human review  
+✔ **Flaky test detection** — tests that fail then pass on retry are surfaced as flaky candidates  
+✔ **AI Test Intelligence dashboard** — pass rate, failure breakdown, RCA table, and flaky candidates  
+✔ CI integration for GitHub Actions and Jenkins  
+✔ HTML reports, Allure reporting, and trace viewer support
 
 ---
 
 ## How the self-healing pipeline works
 
-Three categories of "broken," three different responses:
-
 | Failure type | Example | What happens |
 |---|---|---|
-| **Syntax / type error** | A `.ts`/`.mjs` file doesn't compile | Auto-fixed by `auto-heal.mjs`, re-verified, before tests even run |
-| **Locator-class failure** | `locator.click: Timeout 10000ms exceeded` | Auto-fixed by `heal-locators.mjs` using a role → testid → label → text priority ladder, then the spec is re-run to confirm the fix |
-| **Assertion-class failure** | App returned a value different from what the test expected | **Never auto-fixed.** This might mean the app's behavior genuinely changed — "fixing" the assertion could hide a real bug |
+| **Syntax / type error** | A `.ts`/`.mjs` file doesn't compile | `auto-heal.mjs` attempts a fix and verifies it before tests run |
+| **Locator-class failure** | `locator.click: Timeout 10000ms exceeded` | `heal-locators.mjs` uses a role → testid → label → text priority ladder, then re-runs the spec to check the fix |
+| **Assertion-class failure** | App returned a value different from the expected value | **Never auto-fixed.** The app's behavior may have changed; the failure is reported for human review |
 
 The LangGraph runner in `graph/automationGraph.mjs` coordinates the existing healing scripts without
 reimplementing them.
@@ -74,6 +72,7 @@ PlaywrightScripting/
 │   ├── analyze-results.mjs
 │   └── lib/                       # Shared automation and flaky-test utilities
 ├── graph/                         # LangGraph automation and analysis
+├── requirements/                  # Requirement-to-test mapping files
 ├── .github/workflows/             # GitHub Actions workflows
 ├── jenkins-agent/                 # Jenkins agent config
 ├── jenkins-config.xml
@@ -98,7 +97,8 @@ npm install
 npx playwright install
 ```
 
-For the AI-powered scripts (auto-heal, heal-locators, RCA analysis), set an Anthropic API key:
+The requirement-to-report QA pipeline uses local deterministic agents and does not require an AI API
+key. AI-powered healing and failure-analysis scripts may require an Anthropic API key:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-...
@@ -109,8 +109,8 @@ export ANTHROPIC_API_KEY=sk-...
 ## Running Tests
 
 ```bash
-npx playwright test                          # full suite
-npx playwright test --headed                  # headed mode
+npx playwright test                              # full suite
+npx playwright test --headed                     # headed mode
 npx playwright test tests/specs/checkout.spec.ts # a specific spec
 ```
 
@@ -121,36 +121,36 @@ npm run orchestrate           # run the LangGraph healing workflow
 npm run orchestrate:pr        # allow healing scripts to open pull requests
 ```
 
-## Running the requirement-to-report QA pipeline
+## Running the AI requirement-to-report QA pipeline
 
-The LangGraph QA pipeline connects requirements to existing Playwright specs and then executes,
-validates, diagnoses, and reports the run. Each requirement maps to exact test titles and spec
-paths; it does not invent assertions or modify your specs. The pipeline has local, deterministic
-agents and does not require an AI API key.
+The LangGraph QA pipeline connects requirements to existing Playwright specs, then plans, executes,
+validates, diagnoses, and reports the run. The pipeline uses deterministic local agents to orchestrate
+the workflow; it does not use an LLM to invent tests. Each requirement must map to exact Playwright
+test titles and spec paths. The pipeline does not create assertions or modify your specs.
 
 ```bash
 npm run qa:pipeline -- --requirements requirements/qa-requirements.example.json --project chromium
 npm run qa:pipeline -- --requirements requirements/qa-requirements.example.json --plan-only
 ```
 
-The requirements JSON contains a name, requirement IDs and descriptions, and one or more mapped
-tests per requirement. Copy the example file and replace the sample requirements and test mappings.
-Spec paths must stay under `tests/`, and test titles must exactly match the Playwright test title.
+Copy `requirements/qa-requirements.example.json` and replace the sample requirements and test mappings.
+Each requirement includes an ID, description, and one or more mapped tests. Spec paths must stay under
+`tests/`, and test titles must exactly match the Playwright test title.
 
-The pipeline runs these stages in order:
+### Pipeline stages
 
-1. Requirement analysis validates the input and mapped tests.
-2. Test planning expands the requirement-to-test mappings.
-3. Test-case generation writes `reports/qa-test-plan.json`.
-4. Automation validates spec paths and selects the mapped spec files.
-5. Execution runs Playwright against those spec files (optionally in one project).
-6. Validation compares every mapped test against its executions.
-7. Bug analysis reuses the existing failure classifier and RCA graph.
-8. Reporting writes `reports/qa-pipeline.json` and refreshes the existing intelligence dashboard.
+1. **Requirement analysis** validates the requirements JSON and mapped tests.
+2. **Test planning** maps each requirement to its configured test cases.
+3. **Test-case generation** writes the plan to `reports/qa-test-plan.json`.
+4. **Automation** validates spec paths and selects the mapped spec files.
+5. **Execution** runs Playwright against those files, optionally for one project.
+6. **Validation** compares each mapped test with its recorded execution, including missing or skipped tests.
+7. **Bug analysis** reuses the existing failure classifier and RCA graph.
+8. **Reporting** writes `reports/qa-pipeline.json` and refreshes the existing intelligence dashboard.
 
 `--plan-only` validates the requirements and emits the test plan without starting browsers or
-refreshing reports from an earlier run. A normal run writes the Playwright results to
-`test-results/results.json`; the JSON and HTML intelligence outputs remain under `reports/`.
+refreshing reports from an earlier run. A normal run writes Playwright results to
+`test-results/results.json`; the QA pipeline JSON and intelligence outputs are under `reports/`.
 
 Individual pieces can also be run on their own:
 
@@ -171,13 +171,13 @@ npx playwright show-report    # standard Playwright HTML report
 npx playwright test --trace on && npx playwright show-trace trace.zip
 ```
 
-The dashboard shows total tests, pass rate, and AI-generated failure diagnoses with category,
-confidence, and recommendations. Its **Recommended Next Steps** section groups failures by type,
-explains whether auto-heal is appropriate, and provides copyable commands to preview safe locator
-repairs or inspect failures that need manual review. Assertion mismatches are never recommended
-for auto-healing. Flaky candidates are listed separately for stability follow-up.
+The dashboard shows total tests, pass rate, and failure diagnoses with category, confidence, and
+recommendations. Its **Recommended Next Steps** section groups failures by type, explains whether
+auto-heal is appropriate, and provides commands to preview safe locator repairs or inspect failures
+that need manual review. Assertion mismatches are never recommended for auto-healing. Flaky candidates
+are listed separately for stability follow-up.
 
-Playwright also retains a trace and video for failed tests (alongside the failure screenshot) under
+Playwright retains a trace and video for failed tests (alongside the failure screenshot) under
 `test-results/`. To inspect a trace, open the test's `trace.zip` with:
 
 ```bash
